@@ -21,6 +21,12 @@ dependencies {
     implementation(project(":plugin-amazonq:shared:jetbrains-community"))
     // CodeWhispererTelemetryService uses a CircularFifoQueue, previously transitive from zjsonpatch
     implementation(libs.commons.collections)
+//    implementation("com.alphacephei:vosk:0.3.38")
+    implementation(platform("com.google.cloud:libraries-bom:26.1.4"))
+    implementation("com.google.cloud:google-cloud-speech")
+//    implementation("software.amazon.awssdk:transcribestreaming:2.29.52")
+//    implementation("software.amazon.awssdk:translate:2.29.52")
+//    implementation("software.amazon.awssdk:auth:2.29.52")
 
     testFixturesApi(testFixtures(project(":plugin-core:jetbrains-community")))
     testFixturesApi(project(path = ":plugin-toolkit:jetbrains-core", configuration = "testArtifacts"))

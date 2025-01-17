@@ -96,6 +96,7 @@ import java.util.concurrent.TimeUnit
 class CodeWhispererService(private val cs: CoroutineScope) : Disposable {
     private val codeInsightSettingsFacade = CodeInsightsSettingsFacade()
     private var refreshFailure: Int = 0
+    var prompt: String = ""
 
     init {
         Disposer.register(this, codeInsightSettingsFacade)

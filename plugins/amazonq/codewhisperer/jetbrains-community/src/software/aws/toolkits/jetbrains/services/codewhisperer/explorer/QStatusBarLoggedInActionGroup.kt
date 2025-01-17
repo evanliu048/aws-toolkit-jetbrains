@@ -16,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererProvideFeedbackAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererShowSettingsAction
+import software.aws.toolkits.jetbrains.services.codewhisperer.actions.StartSpeechToTextAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererCodeScanRunAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.ActionProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.Customize
@@ -72,6 +73,9 @@ class QStatusBarLoggedInActionGroup : DefaultActionGroup() {
                     add(SsoLogoutAction(connection))
                 }
             }
+
+            add(Separator.create())
+            add(StartSpeechToTextAction())
         }.toTypedArray()
     }.orEmpty()
 }
