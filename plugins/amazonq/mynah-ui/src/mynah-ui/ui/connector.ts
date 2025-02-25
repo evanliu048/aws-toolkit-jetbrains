@@ -25,7 +25,7 @@ import { isFormButtonCodeTest, isFormButtonCodeScan, isFormButtonCodeTransform }
 import { DiffTreeFileInfo } from './diffTree/types'
 import { CodeScanChatConnector } from "./apps/codeScanChatConnector";
 import { CodeTestChatConnector } from './apps/codeTestChatConnector'
-
+import { Profile } from './walkthrough/profileSelection'
 export interface CodeReference {
     licenseName?: string
     repository?: string
@@ -108,7 +108,8 @@ export class Connector {
     private readonly codeTestChatConnector: CodeTestChatConnector
     private readonly tabsStorage
     private readonly amazonqCommonsConnector: AmazonQCommonsConnector
-
+    //todo revise public variable
+    public allProfiles?: Profile[];
     private isUIReady = false
 
     constructor(props: ConnectorProps) {
