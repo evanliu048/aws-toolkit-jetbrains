@@ -5,9 +5,8 @@
 
 import { ChatItemType, MynahIcons, MynahUITabStoreTab } from '@aws/mynah-ui-chat'
 import { TabDataGenerator } from '../tabs/generator'
-import {Profile} from "./profileSelection";
 
-export const welcomeScreenTabData = (tabs: TabDataGenerator, selectedProfile? : Profile): MynahUITabStoreTab => ({
+export const welcomeScreenTabData = (tabs: TabDataGenerator): MynahUITabStoreTab => ({
     isSelected: true,
     store: {
         quickActionCommands: tabs.quickActionsGenerator.generateForTab('welcome'),

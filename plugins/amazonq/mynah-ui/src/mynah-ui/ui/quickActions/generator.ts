@@ -150,10 +150,6 @@ export class QuickActionGenerator {
                 description: '',
                 unavailableItems: [],
             },
-            profileSelection: {
-                description: '',
-                unavailableItems: [],
-            }
         }
 
         return quickActionCommands.map((commandGroup: QuickActionCommandGroup) => {

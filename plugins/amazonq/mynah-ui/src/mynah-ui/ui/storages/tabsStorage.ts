@@ -13,7 +13,6 @@ const TabTypes = [
     'codetest',
     'agentWalkthrough',
     'welcome',
-    'profileSelection',
     'unknown',
 ] as const
 export type TabType = (typeof TabTypes)[number]

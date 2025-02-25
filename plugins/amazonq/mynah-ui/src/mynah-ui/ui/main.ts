@@ -28,7 +28,6 @@ import { DiffTreeFileInfo } from './diffTree/types'
 import './styles.css'
 import { ChatPrompt, CodeSelectionType} from "@aws/mynah-ui-chat/dist/static";
 import {welcomeScreenTabData} from "./walkthrough/welcome";
-import {profileSelectionTabData, Profile} from "./walkthrough/profileSelection";
 import { agentWalkthroughDataModel } from './walkthrough/agent'
 import {createClickTelemetry, createOpenAgentTelemetry} from "./telemetry/actions";
 import {disclaimerAcknowledgeButtonId, disclaimerCard} from "./texts/disclaimer";
@@ -64,19 +63,11 @@ export const createMynahUI = (
             })
         },
     })
-    const profiles: Profile[] = [
-        { id: 'acme', name: 'ACME platform work', region: 'us-west-2', endpoint: 'https://acme.example.com' },
-        { id: 'eu', name: 'EU Payments Team', region: 'eu-central-1', endpoint: 'https://eu.example.com' },
-    ]
-    let initialTabType: TabType = showWelcomePage ? 'welcome' : 'cwc'
-    if (profiles.length > 1) {
-        initialTabType = 'profileSelection' as TabType // 这里加上 `as TabType`
-    }
     // Adding the first tab as CWC tab
     tabsStorage.addTab({
         id: 'tab-1',
         status: 'free',
-        type: initialTabType,
+        type: showWelcomePage ? 'welcome' : 'cwc',
         isSelected: true,
     })
 
@@ -714,17 +705,17 @@ export const createMynahUI = (
         onChatPromptProgressActionButtonClicked: (tabID, action) => {
             connector.onCustomFormAction(tabID, undefined, action)
         },
-        // tabs: {
-        //     'tab-1': {
-        //         isSelected: true,
-        //         store: {
-        //             ...(showWelcomePage
-        //                 ? welcomeScreenTabData(tabDataGenerator).store
-        //                 : tabDataGenerator.getTabData('cwc', true)),
-        //             ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
-        //         },
-        //     },
-        // },
+        tabs: {
+            'tab-1': {
+                isSelected: true,
+                store: {
+                    ...(showWelcomePage
+                        ? welcomeScreenTabData(tabDataGenerator).store
+                        : tabDataGenerator.getTabData('cwc', true)),
+                    ...(disclaimerCardActive ? { promptInputStickyCard: disclaimerCard } : {}),
+                },
+            },
+        },
         onInBodyButtonClicked: (tabId, messageId, action, eventId) => {
             if (action.id === disclaimerAcknowledgeButtonId) {
                 disclaimerCardActive = false
@@ -778,28 +769,6 @@ export const createMynahUI = (
                 ideApi.postMessage(createClickTelemetry('amazonq-welcome-explore-button'))
                 return
             }
-            if (action.id.startsWith('select-profile-')) {
-                const selectedId = action.id.replace('select-profile-', '')
-                // 我们之前把allProfiles存到connector里
-                // 你可以改成别的地方存也可以
-                const selectedProfile = connector.allProfiles?.find(
-                    p => p.id === selectedId
-                )
-                if (selectedProfile) {
-                    // mock更新region/endpoint
-                    // await mockUpdateEnvironment(selectedProfile)
-
-                    // 切换到welcome
-                    tabsStorage.updateTabTypeFromUnknown(tabId, 'welcome')
-
-                    // 如果想在welcome banner上展示profile，可改welcomeScreenTabData支持接收profile
-                    mynahUI.updateStore(
-                        tabId,
-                        welcomeScreenTabData(tabDataGenerator, selectedProfile).store!
-                    )
-                }
-                return
-            }
 
             connector.onCustomFormAction(tabId, messageId, action, eventId)
         },
@@ -811,19 +780,7 @@ export const createMynahUI = (
             feedbackOptions: feedbackOptions,
             texts: uiComponentsTexts,
         },
-        tabs: {
-            'tab-1': {
-                isSelected: true,
-                store:
-                    initialTabType === 'profileSelection'
-                        ? profileSelectionTabData(profiles).store
-                        : showWelcomePage
-                            ? welcomeScreenTabData(tabDataGenerator).store
-                            : tabDataGenerator.getTabData('cwc', true),
-            },
-        },
     })
-    connector.allProfiles = profiles
 
     followUpsInteractionHandler = new FollowUpInteractionHandler({
         mynahUI,
