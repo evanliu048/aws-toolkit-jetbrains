@@ -36,6 +36,9 @@ export class IdeClient {
         this.store.commit('setProfiles', extractedProfiles);
     }
 
+    onIdcLoginSuccess(){
+        this.store.commit('setStage', 'PROFILE_SELECT')
+    }
     updateAuthorization(code: string | undefined) {
         this.store.commit('setAuthorizationCode', code)
         // TODO: mutage stage to AUTHing here probably makes life easier

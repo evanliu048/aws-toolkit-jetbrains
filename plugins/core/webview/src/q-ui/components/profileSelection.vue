@@ -57,7 +57,9 @@ export default defineComponent({
         selectProfile() {
             // TODO: update endporint
             this.$store.commit('setSelectedProfile', this.selectedProfile)
-            this.$store.commit('setStage', 'CONNECTED')
+            window.ideApi.postMessage({
+                command: 'switchConnection',
+            })
         }
     }
 })

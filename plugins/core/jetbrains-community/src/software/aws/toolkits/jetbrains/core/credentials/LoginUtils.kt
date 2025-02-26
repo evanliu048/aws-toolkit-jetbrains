@@ -28,6 +28,7 @@ import software.aws.toolkits.jetbrains.core.credentials.sono.SONO_URL
 import software.aws.toolkits.jetbrains.core.credentials.sono.isSono
 import software.aws.toolkits.jetbrains.core.credentials.sso.bearer.InteractiveBearerTokenProvider
 import software.aws.toolkits.jetbrains.core.credentials.sso.pkce.ToolkitOAuthService
+import software.aws.toolkits.jetbrains.core.webview.LoginBrowser
 import software.aws.toolkits.jetbrains.utils.runUnderProgressIfNeeded
 import software.aws.toolkits.resources.AwsCoreBundle
 import software.aws.toolkits.telemetry.CredentialSourceId
@@ -103,7 +104,8 @@ sealed class Login<T> {
 //                close(DialogWrapper.OK_EXIT_CODE)
 //                return
 //            }
-            ToolkitConnectionManager.getInstance(project).switchConnection(conn)
+//            ToolkitConnectionManager.getInstance(project).switchConnection(conn)
+            LoginBrowser.Companion.ConnectionStorage.storeConnection(conn)
 
             return conn
         }

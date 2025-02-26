@@ -168,6 +168,14 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
                 loginIdC(message.url, awsRegion, Q_SCOPES)
             }
 
+            is BrowserMessage.SwitchConnection -> {
+                val conn = LoginBrowser.Companion.ConnectionStorage.getConnection()
+                conn?.let {
+                    ToolkitConnectionManager.getInstance(project).switchConnection(conn)
+                }
+                LoginBrowser.Companion.ConnectionStorage.removeConnection()
+            }
+
             is BrowserMessage.CancelLogin -> {
                 cancelLogin()
             }
