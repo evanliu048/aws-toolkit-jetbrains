@@ -86,7 +86,7 @@ export default defineComponent({
 }
 .profile-title {
     margin: 0;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: bold;
     color: white;
 }
@@ -115,7 +115,8 @@ hr {
     color: white;
 }
 .profile-item input[type="radio"] {
-    margin-right: 8px;
+    margin-right: 4px;
+    transform: scale(0.6);
 }
 .profile-name {
     font-size: 13px;
