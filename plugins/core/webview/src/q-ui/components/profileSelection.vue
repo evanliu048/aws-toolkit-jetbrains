@@ -1,151 +1,142 @@
 <!-- Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved. -->
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
-<script setup lang="ts">
-
-</script>
-
 <template>
-    <div class="profile-picker">
-        <div class="profile-picker__header">
-            <h2 class="profile-picker__title">Select profile</h2>
+    <div class="profile-selection-wrapper">
+        <div class="profile-card">
+            <div class="profile-header">
+                <h2 class="profile-title">Select profile</h2>
+                <p class="profile-subtitle">
+                    You have multiple profiles assigned to you in this account please select one to continue.
+                </p>
+                <hr />
+            </div>
+
+            <div class="profile-list">
+                <label
+                    class="profile-item"
+                    v-for="(profile, index) in profiles"
+                    :key="index"
+                    @click="selectProfile(profile)"
+                >
+                    <input
+                        type="radio"
+                        name="selectedProfile"
+                        :value="profile"
+                        v-model="selectedProfile"
+                    />
+                    <span class="profile-name">{{ profile.name }}</span>
+                </label>
+            </div>
         </div>
-
-        <p class="profile-picker__description">
-            You have multiple profiles assigned to you in this account, please select one to continue.
-        </p>
-
-        <!-- 动态渲染 Profiles -->
-        <div class="profile-picker__options">
-            <label
-                v-for="profile in profiles"
-                :key="profile.arn"
-                class="profile-picker__option"
-            >
-                <span>{{ profile.name }} ({{ profile.region }})</span>
-                <input
-                    type="radio"
-                    name="profile"
-                    :value="profile.arn"
-                    v-model="selectedProfile"
-                />
-            </label>
-        </div>
-
-        <!-- 确认按钮 -->
-        <button class="profile-picker__confirm" @click="confirmProfile">
-            Confirm
-        </button>
     </div>
 </template>
 
-<script setup lang="ts">
-import { ref, defineProps } from 'vue'
+<script lang="ts">
+import { defineComponent } from 'vue'
+import { Profile, State } from '../../model'
 
-// Profile 数据结构
-interface Profile {
-    arn: string
-    name: string
-    region: string
-}
+export default defineComponent({
+    name: 'ProfileSelection',
+    props: {
+        app: { type: String, default: '' }
+    },
+    data() {
+        return {
+            selectedProfile: null as (Profile | null)
+        }
+    },
+    computed: {
+        profiles(): Profile[] {
+            console.log("Vuex raw profiles:", this.$store.state.profiles);
+            return Array.isArray(this.$store.state.profiles) ? this.$store.state.profiles : this.$store.state.profiles || [];
 
-// 从父组件 / WebView Shell 处传入的 Profiles
-const props = defineProps<{
-    profiles: Profile[]
-}>()
-
-// 当前选中的 Profile.arn
-const selectedProfile = ref<string>("")
-
-function confirmProfile() {
-    if (!selectedProfile.value) {
-        alert("Please select a profile first.")
-        return
+        }
+    },
+    methods: {
+        selectProfile() {
+            // TODO: update endporint
+            this.$store.commit('setSelectedProfile', this.selectedProfile)
+            this.$store.commit('setStage', 'CONNECTED')
+        }
     }
-
-    // 将所选 Profile 通知 JetBrains 插件 (Kotlin 端)
-    window.ideApi.postMessage({
-        command: 'setProfile',
-        profileArn: selectedProfile.value
-    })
-}
+})
 </script>
 
-<style scoped>
-.profile-picker {
-    width: 280px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
+<style scoped lang="scss">
+.profile-selection-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
     padding: 16px;
-    font-family: system-ui, sans-serif;
-    background-color: #fff;
-    box-sizing: border-box;
 }
 
-.profile-picker__header {
-    display: flex;
-    align-items: center;
+.profile-card {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: var(--vscode-editor-background);
+    width: 320px;
+    padding: 16px;
+    position: relative;
+}
+
+.profile-header {
+    margin-bottom: 12px;
+    color: white;
+}
+.profile-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+    color: white;
+}
+.profile-subtitle {
+    margin: 4px 0 8px;
+    font-size: 12px;
+    color: #cccccc;
+}
+hr {
+    border: none;
+    border-top: 1px solid #ccc;
+    margin: 0;
     margin-bottom: 12px;
 }
 
-.profile-picker__star {
-    color: #f7c544;
-    font-size: 24px;
-    margin-right: 8px;
-}
-
-.profile-picker__title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: bold;
-}
-
-.profile-picker__description {
-    margin: 0 0 16px 0;
-    font-size: 14px;
-    color: #333;
-    line-height: 1.4;
-}
-
-.profile-picker__options {
+.profile-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    margin-bottom: 12px;
 }
-
-.profile-picker__option {
+.profile-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
+    margin-bottom: 8px;
     cursor: pointer;
+    color: white;
+}
+.profile-item input[type="radio"] {
+    margin-right: 8px;
+}
+.profile-name {
+    font-size: 13px;
+    color: white;
 }
 
-.profile-picker__option:hover {
-    background-color: #f8f8f8;
+/* Theme specific styles */
+body.jb-dark {
+    .profile-card {
+        background-color: #252526;
+        color: white;
+    }
 }
 
-.profile-picker__option input[type="radio"] {
-    cursor: pointer;
+body.jb-light {
+    .profile-card {
+        background-color: #ffffff;
+        color: black;
+    }
+    .profile-title, .profile-subtitle, .profile-name {
+        color: black;
+    }
 }
-
-.profile-picker__confirm {
-    margin-top: 12px;
-    padding: 8px 16px;
-    background-color: #0073e6;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-.profile-picker__confirm:hover {
-    background-color: #005bb5;
-}
-</style>
-
-
-<style scoped lang="scss">
-
 </style>

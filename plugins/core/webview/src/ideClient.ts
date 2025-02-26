@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Store} from "vuex";
-import {IdcInfo, Region, Stage, State, BrowserSetupData, AwsBearerTokenConnection} from "./model";
+import {IdcInfo, Region, Stage, State, BrowserSetupData, AwsBearerTokenConnection, Profile} from "./model";
 
 export class IdeClient {
     constructor(private readonly store: Store<State>) {}
@@ -29,6 +29,11 @@ export class IdeClient {
 
         this.store.commit("setExistingConnections", existConnections)
         this.updateAuthorization(undefined)
+    }
+
+    async handleProfiles(profilesData: { profiles: Profile[] }) {
+        const extractedProfiles: Profile[] = Array.isArray(profilesData.profiles) ? profilesData.profiles : [];
+        this.store.commit('setProfiles', extractedProfiles);
     }
 
     updateAuthorization(code: string | undefined) {

@@ -3,6 +3,7 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq
 
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
@@ -203,6 +204,27 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
                 } else {
                     UiTelemetry.click(project, signInOption)
                 }
+            }
+            is BrowserMessage.ListProfiles -> {
+                val jsonData = """
+           {
+  "profiles": [
+    {
+      "name": "ACME platform work",
+      "region": "us-west-2",
+      "endpoint": "https://example.com/api/us-west-2"
+    },
+    {
+      "name": "EU Payments Team",
+      "region": "eu-central-1",
+      "endpoint": "https://example.com/api/eu-central-1"
+    }
+  ]
+}
+
+        """.trimIndent()
+
+                executeJS("window.ideClient.handleProfiles($jsonData)")
             }
         }
     }

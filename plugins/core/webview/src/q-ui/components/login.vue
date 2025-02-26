@@ -17,17 +17,19 @@
         <SsoLoginForm :app="app" v-if="stage === 'SSO_FORM'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"  @emitUiClickTelemetry="sendUiClickTelemetry"/>
         <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login" @emitUiClickTelemetry="sendUiClickTelemetry"/>
         <Authenticating v-if="stage === 'AUTHENTICATING'" :selected-login-option="this.selectedLoginOption" @cancel="handleCancelButton"/>
+        <ProfileSelection v-if="stage === 'PROFILE_SELECT'" @stageChanged="mutateStage" @login="login" @emitUiClickTelemetry="sendUiClickTelemetry"/>
 
         <template v-if="stage === 'CONNECTED'"></template>
     </div>
 </template>
 <script lang="ts">
-import {defineComponent} from 'vue'
+import {defineComponent, nextTick, watch} from 'vue'
 import SsoLoginForm from "./ssoLoginForm.vue";
 import LoginOptions from "./loginOptions.vue";
 import AwsProfileForm from "./awsProfileForm.vue";
 import Authenticating from "./authenticating.vue";
-import {BuilderId, ExistConnection, Feature, IdC, LoginIdentifier, LoginOption, LongLivedIAM, Stage} from "../../model";
+import {BuilderId, ExistConnection, Feature, IdC, LoginIdentifier, LoginOption, LongLivedIAM, Stage, Profile} from "../../model";
+import ProfileSelection from "@/q-ui/components/profileSelection.vue";
 
 const authUiClickOptionMap = {
     [LoginIdentifier.BUILDER_ID]: 'auth_builderIdOption',
@@ -50,7 +52,8 @@ export default defineComponent({
         SsoLoginForm,
         LoginOptions,
         AwsProfileForm,
-        Authenticating
+        Authenticating,
+        ProfileSelection
     },
     props: {
         disabled: {
@@ -107,6 +110,7 @@ export default defineComponent({
                     region: type.region,
                     feature: this.feature
                 })
+                window.ideApi.postMessage({command: 'listProfiles'})
             } else if (type instanceof BuilderId) {
                 window.ideApi.postMessage({command: 'loginBuilderId'})
             } else if (type instanceof LongLivedIAM) {
@@ -119,9 +123,18 @@ export default defineComponent({
             } else if (type instanceof ExistConnection) {
                 window.ideApi.postMessage({ command: 'selectConnection', connectionId:  type.pluginConnectionId})
             }
+            this.checkProfilesAfterLogin()
         },
         sendUiClickTelemetry(element: LoginIdentifier) {
             window.ideApi.postMessage({command: 'sendUiClickTelemetry', signInOptionClicked: getUiClickEvent(element)})
+        },
+        async checkProfilesAfterLogin() {
+            // wait for update
+            await nextTick();
+            if (this.$store.state.profiles) {
+                this.$store.commit('setStage', 'PROFILE_SELECT')
+                this.mutateStage('PROFILE_SELECT')
+            }
         }
     },
     mounted() {},

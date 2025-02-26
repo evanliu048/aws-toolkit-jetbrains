@@ -26,7 +26,8 @@ export type Stage =
     'CONNECTED' |
     'AUTHENTICATING' |
     'AWS_PROFILE' |
-    'REAUTH'
+    'REAUTH' |
+    'PROFILE_SELECT'
 
 export type Feature = 'Q' | 'codecatalyst' | 'awsExplorer'
 
@@ -50,7 +51,9 @@ export interface State {
     lastLoginIdcInfo: IdcInfo,
     feature: Feature,
     cancellable: boolean,
-    existingConnections: AwsBearerTokenConnection[]
+    existingConnections: AwsBearerTokenConnection[],
+    profiles: Profile[],
+    selectedProfile: Profile | null
 }
 
 export enum LoginIdentifier {
@@ -65,6 +68,12 @@ export interface LoginOption {
     id: LoginIdentifier
 
     requiresBrowser(): boolean
+}
+
+export interface Profile {
+    name: string
+    region: string
+    endpoint: string
 }
 
 export class LongLivedIAM implements LoginOption {
