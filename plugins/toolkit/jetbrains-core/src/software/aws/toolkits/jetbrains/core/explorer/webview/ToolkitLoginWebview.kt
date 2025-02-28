@@ -244,7 +244,13 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
                 }
             }
 
-            is BrowserMessage.ListProfiles -> TODO()
+            is BrowserMessage.ListProfiles -> {
+
+            }
+
+            BrowserMessage.SwitchConnection -> {
+
+            }
         }
     }
 

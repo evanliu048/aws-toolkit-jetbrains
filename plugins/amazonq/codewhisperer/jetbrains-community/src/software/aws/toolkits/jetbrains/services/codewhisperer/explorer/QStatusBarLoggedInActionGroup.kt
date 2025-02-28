@@ -16,6 +16,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispe
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererLearnMoreAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererProvideFeedbackAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererShowSettingsAction
+import software.aws.toolkits.jetbrains.services.codewhisperer.actions.CodeWhispererSwitchProfilesAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.codescan.actions.CodeWhispererCodeScanRunAction
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.ActionProvider
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.actions.Customize
@@ -67,6 +68,7 @@ class QStatusBarLoggedInActionGroup : DefaultActionGroup() {
 
             add(Separator.create())
             add(CodeWhispererShowSettingsAction())
+            add(CodeWhispererSwitchProfilesAction())
             ToolkitConnectionManager.getInstance(it).activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let { c ->
                 (c as? AwsBearerTokenConnection)?.let { connection ->
                     add(SsoLogoutAction(connection))
