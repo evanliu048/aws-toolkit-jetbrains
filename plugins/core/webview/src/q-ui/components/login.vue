@@ -17,7 +17,7 @@
         <SsoLoginForm :app="app" v-if="stage === 'SSO_FORM'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login"  @emitUiClickTelemetry="sendUiClickTelemetry"/>
         <AwsProfileForm v-if="stage === 'AWS_PROFILE'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login" @emitUiClickTelemetry="sendUiClickTelemetry"/>
         <Authenticating v-if="stage === 'AUTHENTICATING'" :selected-login-option="this.selectedLoginOption" @cancel="handleCancelButton"/>
-        <ProfileSelection v-if="stage === 'PROFILE_SELECT'" @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login" @emitUiClickTelemetry="sendUiClickTelemetry"/>
+        <ProfileSelection v-if="stage === 'PROFILE_SELECT' && app === 'AMAZONQ'"  @backToMenu="handleBackButtonClick" @stageChanged="mutateStage" @login="login" @emitUiClickTelemetry="sendUiClickTelemetry"/>
 
         <template v-if="stage === 'CONNECTED'"></template>
     </div>

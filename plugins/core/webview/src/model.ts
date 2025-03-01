@@ -74,6 +74,7 @@ export interface Profile {
     name: string
     region: string
     endpoint: string
+    description: String
 }
 
 export class LongLivedIAM implements LoginOption {

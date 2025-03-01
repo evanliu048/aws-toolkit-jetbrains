@@ -2,32 +2,41 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 
 <template>
-    <div class="profile-selection-wrapper">
-        <div class="profile-card">
+    <div @keydown.enter="handleContinueClick">
+        <div class="font-amazon" v-if="profiles.length > 0">
+            <!-- Title & Subtitle -->
             <div class="profile-header">
-                <h2 class="profile-title">Select profile</h2>
+                <h2 class="title bottom-small-gap">Select profile</h2>
                 <p class="profile-subtitle">
-                    You have multiple profiles assigned to you in this account please select one to continue.
+                    Profiles have different configs defined by your administrators.
+                    Select the profile that best meets your current working need and switch at any time.
                 </p>
-                <hr />
             </div>
-
+            <!-- Profile List -->
             <div class="profile-list">
-                <label
-                    class="profile-item"
+                <div
                     v-for="(profile, index) in profiles"
                     :key="index"
-                    @click="selectProfile(profile)"
+                    class="profile-item bottom-small-gap"
+                    :class="{ selected: selectedProfile?.name === profile.name }"
+                    @click="toggleItemSelection(profile)"
+                    tabindex="0"
                 >
-                    <input
-                        type="radio"
-                        name="selectedProfile"
-                        :value="profile"
-                        v-model="selectedProfile"
-                    />
-                    <span class="profile-name">{{ profile.name }}</span>
-                </label>
+                    <div class="text">
+                        <div class="profile-name">{{ profile.name }} - <span class="profile-region">{{ profile.region }}</span></div>
+                        <div class="profile-description">{{ profile.description }}</div>
+                    </div>
+                </div>
             </div>
+            <!-- Continue Button -->
+            <button
+                class="login-flow-button continue-button font-amazon"
+                :disabled="selectedProfile === null"
+                v-on:click="handleContinueClick()"
+                tabindex="-1"
+            >
+                Continue
+            </button>
         </div>
     </div>
 </template>
@@ -54,92 +63,87 @@ export default defineComponent({
         }
     },
     methods: {
-        selectProfile() {
-            // TODO: update endporint
-            this.$store.commit('setSelectedProfile', this.selectedProfile)
-            window.ideApi.postMessage({
-                command: 'switchConnection',
-            })
+        toggleItemSelection(profile: Profile) {
+            this.selectedProfile = profile;
+        },
+        emitUiClickMetric(profileId: string) {
+            this.$emit('emitUiClickTelemetry', profileId);
+        },
+        handleContinueClick() {
+            if (this.selectedProfile) {
+                this.$store.commit('setSelectedProfile', this.selectedProfile);
+                window.ideApi.postMessage({
+                    command: 'switchProfile',
+                });
+            }
         }
     }
 })
 </script>
-
 <style scoped lang="scss">
-.profile-selection-wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 16px;
-}
-
-.profile-card {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background-color: var(--vscode-editor-background);
-    width: 320px;
-    padding: 16px;
-    position: relative;
-}
-
 .profile-header {
-    margin-bottom: 12px;
-    color: white;
+    margin-bottom: 16px;
 }
-.profile-title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: bold;
-    color: white;
-}
+
 .profile-subtitle {
-    margin: 4px 0 8px;
     font-size: 12px;
-    color: #cccccc;
-}
-hr {
-    border: none;
-    border-top: 1px solid #ccc;
-    margin: 0;
+    color: #bbbbbb;
     margin-bottom: 12px;
 }
 
 .profile-list {
     display: flex;
     flex-direction: column;
-    margin-bottom: 12px;
-}
-.profile-item {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    cursor: pointer;
-    color: white;
-}
-.profile-item input[type="radio"] {
-    margin-right: 4px;
-    transform: scale(0.6);
-}
-.profile-name {
-    font-size: 13px;
-    color: white;
 }
 
-/* Theme specific styles */
+.profile-item {
+    padding: 15px;
+    display: flex;
+    align-items: flex-start;
+    border: 1px solid #cccccc;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: background 0.2s ease-in-out;
+}
+
+.selected {
+    border: 1px solid #29a7ff;
+}
+
+.text {
+    display: flex;
+    flex-direction: column;
+    font-size: 15px;
+}
+.profile-name {
+    font-weight: bold;
+    margin-bottom: 2px;
+    color: white;
+}
+.profile-region {
+    font-style: italic;
+    color: #bbbbbb;
+}
+.profile-description {
+    font-size: 12px;
+    color: #bbbbbb;
+}
 body.jb-dark {
-    .profile-card {
-        background-color: #252526;
-        color: white;
+    .profile-item {
+        border: 1px solid white;
+    }
+    .selected {
+        border: 1px solid #29a7ff;
     }
 }
 
 body.jb-light {
-    .profile-card {
-        background-color: #ffffff;
-        color: black;
+    .profile-item {
+        border: 1px solid black;
     }
-    .profile-title, .profile-subtitle, .profile-name {
-        color: black;
+    .selected {
+        border: 1px solid #3574f0;
     }
 }
 </style>

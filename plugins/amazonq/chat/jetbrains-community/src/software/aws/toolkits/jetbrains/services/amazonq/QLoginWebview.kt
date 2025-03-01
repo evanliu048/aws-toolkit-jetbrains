@@ -220,12 +220,14 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
     {
       "name": "ACME platform work",
       "region": "us-west-2",
-      "endpoint": "https://example.com/api/us-west-2"
+      "endpoint": "https://example.com/api/us-west-2",
+      "description": "General purpose dev profile for platform work"
     },
     {
       "name": "EU Payments Team",
       "region": "eu-central-1",
-      "endpoint": "https://example.com/api/eu-central-1"
+      "endpoint": "https://example.com/api/eu-central-1",
+      "description": "For work on the EU offering of our payment service"
     }
   ]
 }
