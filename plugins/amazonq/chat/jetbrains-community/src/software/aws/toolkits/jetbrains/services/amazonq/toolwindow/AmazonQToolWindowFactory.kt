@@ -12,6 +12,7 @@ import com.intellij.openapi.wm.ToolWindowFactory
 import com.intellij.openapi.wm.ex.ToolWindowEx
 import com.intellij.ui.components.panels.Wrapper
 import com.intellij.util.ui.components.BorderLayoutPanel
+import migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
@@ -28,6 +29,7 @@ import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel
 import software.aws.toolkits.jetbrains.services.amazonq.RefreshQChatPanelButtonPressedListener
 import software.aws.toolkits.jetbrains.services.amazonq.gettingstarted.openMeetQPage
+import software.aws.toolkits.jetbrains.services.cwc.controller.ChatController.Companion.objectMapper
 import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.isQWebviewsAvailable
@@ -146,6 +148,40 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
         } ?: false
 
         if (isNewConnectionForQ) {
+            val profiles = CodeWhispererProfileManager.getInstance().fetchAllAvailableProfiles(project)
+                println("profiles $profiles")
+                val json = objectMapper.writeValueAsString(profiles)
+            if(true || profiles?.size!! > 1){
+                setProfileSelectingInProgress(true)
+                //Todo replace with real response
+                val jsonData = """
+           {
+  "profiles": [
+    {
+      "name": "ACME platform work",
+      "region": "us-west-2",
+      "endpoint": "https://example.com/api/us-west-2",
+      "description": "General purpose dev profile for platform work"
+    },
+    {
+      "name": "EU Payments Team",
+      "region": "eu-central-1",
+      "endpoint": "https://example.com/api/eu-central-1",
+      "description": "For work on the EU offering of our payment service"
+    }
+  ]
+}
+
+        """.trimIndent()
+                QWebviewPanel.getInstance(project).browser?.executeJS(
+                    "window.ideClient.handleProfiles($jsonData)")
+                val component = QWebviewPanel.getInstance(project).component
+                runInEdt { qPanel.setContent(component) }
+                return
+            }
+        }
+
+        if (isNewConnectionForQ) {
             openMeetQPage(project)
         }
 
@@ -168,5 +204,12 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
         private val LOG = getLogger<AmazonQToolWindowFactory>()
         const val WINDOW_ID = AMAZON_Q_WINDOW_ID
         private const val MINIMUM_TOOLWINDOW_WIDTH = 325
+        private var profileSelectingInProgress: Boolean = false
+
+        fun setProfileSelectingInProgress(isInProgress: Boolean) {
+            profileSelectingInProgress = isInProgress
+        }
+
+        fun isProfileSelectingInProgress(): Boolean = profileSelectingInProgress
     }
 }

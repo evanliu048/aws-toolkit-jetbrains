@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.dsl.builder.*
+import migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import javax.swing.ButtonGroup
@@ -34,10 +35,12 @@ class CodeWhispererProfileDialog(
     }
 
     // Todo: decide if need an external link, will link to JB help doc otherwise
-    override fun getHelpId(): String? {
+    override fun getHelpId(): String {
         return ""
     }
     override fun createCenterPanel(): JComponent {
+//        val profileList = CodeWhispererProfileManager.getInstance().fetchAllAvailableProfiles(project);
+//        println(profileList)
         panel = panel {
             row {
                 label(message("codewhisperer.switchProfiles.dialog.panel.title")).bold()

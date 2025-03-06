@@ -31,6 +31,8 @@ import software.amazon.awssdk.services.codewhispererruntime.model.GetTestGenerat
 import software.amazon.awssdk.services.codewhispererruntime.model.IdeCategory
 import software.amazon.awssdk.services.codewhispererruntime.model.InlineChatUserDecision
 import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableCustomizationsRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableProfilesRequest
+import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableProfilesResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.ListFeatureEvaluationsResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.SendTelemetryEventResponse
 import software.amazon.awssdk.services.codewhispererruntime.model.StartCodeFixJobRequest
@@ -101,6 +103,10 @@ interface CodeWhispererClientAdaptor : Disposable {
     fun getCodeFixJob(request: GetCodeFixJobRequest): GetCodeFixJobResponse
 
     fun listAvailableCustomizations(): List<CodeWhispererCustomization>
+
+    fun listAvailableProfilesPaginator(
+        request: ListAvailableProfilesRequest
+    ): Sequence<ListAvailableProfilesResponse>
 
     fun startTestGeneration(uploadId: String, targetCode: List<TargetCode>, userInput: String): StartTestGenerationResponse
 
@@ -371,6 +377,15 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                     )
                 }
             }
+
+    override fun listAvailableProfilesPaginator(request: ListAvailableProfilesRequest) = sequence<ListAvailableProfilesResponse> {
+        var nextToken: String? = request.nextToken()
+        do {
+            val response = bearerClient().listAvailableProfiles(request.copy { it.nextToken(nextToken) })
+            nextToken = response.nextToken()
+            yield(response)
+        } while (!nextToken.isNullOrEmpty())
+    }
 
     override fun startTestGeneration(uploadId: String, targetCode: List<TargetCode>, userInput: String): StartTestGenerationResponse =
         bearerClient().startTestGeneration { builder ->

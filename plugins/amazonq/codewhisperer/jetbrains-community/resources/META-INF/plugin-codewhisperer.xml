@@ -32,6 +32,9 @@
         <applicationService serviceInterface="migration.software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererModelConfigurator"
                             serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.customization.DefaultCodeWhispererModelConfigurator"/>
 
+        <applicationService serviceInterface="migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager"
+                            serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.profiles.DefaultCodeWhispererProfileManager"/>
+
         <projectService serviceInterface="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor"
                         serviceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptorImpl"
                         testServiceImplementation="software.aws.toolkits.jetbrains.services.codewhisperer.credentials.MockCodeWhispererClientAdaptor"/>

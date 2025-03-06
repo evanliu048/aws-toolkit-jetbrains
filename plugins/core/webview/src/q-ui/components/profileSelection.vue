@@ -73,7 +73,7 @@ export default defineComponent({
             if (this.selectedProfile) {
                 this.$store.commit('setSelectedProfile', this.selectedProfile);
                 window.ideApi.postMessage({
-                    command: 'switchProfile',
+                    command: 'profileConfirmed',
                 });
             }
         }

@@ -17,6 +17,8 @@ import com.intellij.ui.components.panels.Wrapper
 import com.intellij.ui.dsl.builder.Align
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.jcef.JBCefJSQuery
+import com.intellij.util.application
+import migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager
 import org.cef.CefApp
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
@@ -24,6 +26,7 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.actions.SsoLogoutAction
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
@@ -34,6 +37,7 @@ import software.aws.toolkits.jetbrains.core.webview.BrowserState
 import software.aws.toolkits.jetbrains.core.webview.LoginBrowser
 import software.aws.toolkits.jetbrains.core.webview.WebviewResourceHandlerFactory
 import software.aws.toolkits.jetbrains.isDeveloperMode
+import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
 import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
@@ -168,12 +172,9 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
                 loginIdC(message.url, awsRegion, Q_SCOPES)
             }
 
-            is BrowserMessage.SwitchConnection -> {
-                val conn = LoginBrowser.Companion.ConnectionStorage.getConnection()
-                conn?.let {
-                    ToolkitConnectionManager.getInstance(project).switchConnection(conn)
-                }
-                LoginBrowser.Companion.ConnectionStorage.removeConnection()
+            is BrowserMessage.ProfileConfirmed -> {
+                AmazonQToolWindowFactory.setProfileSelectingInProgress(false)
+                application.messageBus.syncPublisher(RefreshQChatPanelButtonPressedListener.TOPIC).onRefresh()
             }
 
             is BrowserMessage.CancelLogin -> {

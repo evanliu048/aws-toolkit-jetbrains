@@ -104,8 +104,7 @@ sealed class Login<T> {
 //                close(DialogWrapper.OK_EXIT_CODE)
 //                return
 //            }
-//            ToolkitConnectionManager.getInstance(project).switchConnection(conn)
-            LoginBrowser.Companion.ConnectionStorage.storeConnection(conn)
+            ToolkitConnectionManager.getInstance(project).switchConnection(conn)
 
             return conn
         }

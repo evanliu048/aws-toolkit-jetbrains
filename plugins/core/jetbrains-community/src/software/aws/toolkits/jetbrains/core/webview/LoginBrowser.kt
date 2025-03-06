@@ -296,7 +296,7 @@ abstract class LoginBrowser(
         }
         val onSuccess: () -> Unit = {
             stopAndClearBrowserOpenTimer()
-            executeJS("window.ideClient.onIdcLoginSuccess()")
+//            executeJS("window.ideClient.onIdcLoginSuccess()")
             AwsTelemetry.loginWithBrowser(
                 project = null,
                 result = Result.Succeeded,
@@ -409,19 +409,18 @@ abstract class LoginBrowser(
 
     companion object {
         private val LOG = getLogger<LoginBrowser>()
-        object ConnectionStorage {
-            private var conn : AwsBearerTokenConnection ? = null
-
-            // 生成一个随机 ID 用来区分不同登录请求，也可用UUID
-            fun storeConnection(conn: AwsBearerTokenConnection) {
-                this.conn = conn
-            }
-
-            fun getConnection(): AwsBearerTokenConnection? = this.conn
-            fun removeConnection() {
-                conn = null
-            }
-        }
+//        object ConnectionStorage {
+//            private var conn : AwsBearerTokenConnection ? = null
+//
+//            fun storeConnection(conn: AwsBearerTokenConnection) {
+//                this.conn = conn
+//            }
+//
+//            fun getConnection(): AwsBearerTokenConnection? = this.conn
+//            fun removeConnection() {
+//                conn = null
+//            }
+//        }
         fun getWebviewHTML(webScriptUri: String, query: JBCefJSQuery): String {
             val colorMode = if (JBColor.isBright()) "jb-light" else "jb-dark"
             val postMessageToJavaJsCode = query.inject("JSON.stringify(message)")

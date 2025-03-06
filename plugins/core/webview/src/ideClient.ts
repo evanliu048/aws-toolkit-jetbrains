@@ -31,14 +31,16 @@ export class IdeClient {
         this.updateAuthorization(undefined)
     }
 
-    async handleProfiles(profilesData: { profiles: Profile[] }) {
+    handleProfiles(profilesData: { profiles: Profile[] }) {
+        this.store.commit('setStage', 'PROFILE_SELECT')
+        console.log("received profile data")
         const extractedProfiles: Profile[] = Array.isArray(profilesData.profiles) ? profilesData.profiles : [];
         this.store.commit('setProfiles', extractedProfiles);
     }
 
-    onIdcLoginSuccess(){
-        this.store.commit('setStage', 'PROFILE_SELECT')
-    }
+    // onIdcLoginSuccess(){
+    //     this.store.commit('setStage', 'PROFILE_SELECT')
+    // }
     updateAuthorization(code: string | undefined) {
         this.store.commit('setAuthorizationCode', code)
         // TODO: mutage stage to AUTHing here probably makes life easier
