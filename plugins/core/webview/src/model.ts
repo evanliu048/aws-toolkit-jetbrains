@@ -71,10 +71,10 @@ export interface LoginOption {
 }
 
 export interface Profile {
-    name: string
+    profileName: string
+    accountId: string
     region: string
-    endpoint: string
-    description: String
+    arn: String
 }
 
 export class LongLivedIAM implements LoginOption {

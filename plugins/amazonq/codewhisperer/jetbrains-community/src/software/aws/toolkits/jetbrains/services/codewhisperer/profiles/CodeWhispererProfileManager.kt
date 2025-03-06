@@ -16,6 +16,8 @@ import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.services.amazonq.calculateIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomization
+import java.util.regex.Pattern
 
 @Service(Service.Level.APP)
 class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager, ToolkitConnectionManagerListener, Disposable {
@@ -25,7 +27,7 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager, ToolkitCo
             .maxResults(2)
             .build()
     }
-    override fun fetchAllAvailableProfiles(project: Project) : List<Profile>? =
+    override fun fetchAllAvailableProfiles(project: Project) : List<ProfileUiItem>? =
         calculateIfIamIdentityCenterConnection(project) {
             val listAvailableProfilesRequest = buildListAvailableProfilesRequest()
             println("request: $listAvailableProfilesRequest")
@@ -42,8 +44,31 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager, ToolkitCo
         }
             val profileList = listAvailableProfilesResponse?.flatMap { it.profiles() }
             ?.toList()
-            return@calculateIfIamIdentityCenterConnection profileList
+            return@calculateIfIamIdentityCenterConnection profileList?.let { it1 -> parseProfiles(it1) }
     }
+
+    private fun parseProfiles(profiles: List<Profile>): List<ProfileUiItem> {
+        val arnPattern = Pattern.compile("arn:aws:codewhisperer:([-\\.a-z0-9]{1,63}):(\\d{12}):profile/([a-zA-Z0-9]{12})")
+
+        return profiles.mapNotNull { profile ->
+            val matcher = arnPattern.matcher(profile.arn())
+
+            if (matcher.matches()) {
+                val region = matcher.group(1)
+                val accountId = matcher.group(2)
+
+                ProfileUiItem(
+                    profileName = profile.profileName(),
+                    accountId = accountId,
+                    region = region,
+                    arn = profile.arn()
+                )
+            } else {
+                null
+            }
+        }
+    }
+
 
     companion object {
         private val LOG = getLogger<CodeWhispererProfileManager>()
@@ -54,3 +79,10 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager, ToolkitCo
         TODO("Not yet implemented")
     }
 }
+data class ProfileUiItem(
+    val profileName: String,
+    val accountId: String,
+    val region: String,
+    val arn: String
+)
+

@@ -217,16 +217,15 @@ class ProfileSdkTokenProviderWrapper(private val sessionName: String, region: St
 
     override fun resolveToken(): SdkToken = tokenProvider.value.resolveToken()
 
-    override fun currentToken(): AccessToken =
-//        sdkTokenManager.loadToken().orNull()?.let {
+  override fun currentToken(): AccessToken? = sdkTokenManager.loadToken().orNull()?.let {
         DeviceAuthorizationGrantToken(
-            startUrl = "https://test.awsapps.com/start",
-            region = "us-east-1",
-            accessToken = "aoaAAAAAGfI1c4GwJ4_KJKOX8Od2rlBAr0ZgPrW5m5tEVVB5wBdbvJvYB8BFsnX8QHDJxLcCqkoQOLcAOaoUKrSisBkc0:MGQCMCaZWhQIuFRng2aYgwYWr1M1tb/6zSPDHTQsSTKiStfqlutPvQmTd9/laCHIjUH4cwIwIUz1e3ilWVG6H+Jzjd6OXSCyyMKInu0OrKF5ktfuIueMPvaXnukBdigaYDGYtmS9",
-            refreshToken = "aorAAAAAGfJODYAStAOdpBSxQowBwpBHjNxmjg30Rp-nQKlriIeXOqzJwRmeZO8-YuqSgVYqzhpMqXeN-AcKNoehUBkc0:MGYCMQD9AkFD6FyYsOikLcspMRkYv2s22WLl4xA+Aqo2tJmAAiuX0ZrhArxwMz7tOYl9NSUCMQCleuOFGxKFKWDhuPPWSx4oi2d1bmooiioud7vOGZ8FP//sgAmXloc+fbxxChKOPFU",
-            expiresAt = Instant.now().plusSeconds(3600), // 3600秒后过期
+            startUrl = it.startUrl(),
+            region = it.region(),
+            accessToken = it.token(),
+            refreshToken = it.refreshToken(),
+            expiresAt = it.expirationTime().orElseThrow()
         )
-//    }
+    }
 
     override fun refresh(): AccessToken {
         error("Not yet implemented")

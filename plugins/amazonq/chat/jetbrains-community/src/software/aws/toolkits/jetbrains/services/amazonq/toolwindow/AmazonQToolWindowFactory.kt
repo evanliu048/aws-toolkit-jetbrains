@@ -150,7 +150,7 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
         if (isNewConnectionForQ) {
             val profiles = CodeWhispererProfileManager.getInstance().fetchAllAvailableProfiles(project)
                 println("profiles $profiles")
-                val json = objectMapper.writeValueAsString(profiles)
+            val json = objectMapper.writeValueAsString(profiles)
             if(true || profiles?.size!! > 1){
                 setProfileSelectingInProgress(true)
                 //Todo replace with real response
@@ -158,16 +158,16 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
            {
   "profiles": [
     {
-      "name": "ACME platform work",
+      "profileName": "ACME platform work",
+      "accountId": "533267146179",
       "region": "us-west-2",
-      "endpoint": "https://example.com/api/us-west-2",
-      "description": "General purpose dev profile for platform work"
+      "arn": "arn:aws:codewhisperer:us-west-2:533267146179:profile/PYWHHDDNKQP9"
     },
     {
-      "name": "EU Payments Team",
+      "profileName": "EU Payments Team",
+      "accountId": "123122323123",
       "region": "eu-central-1",
-      "endpoint": "https://example.com/api/eu-central-1",
-      "description": "For work on the EU offering of our payment service"
+      "arn": "arn:aws:codewhisperer:eu-central-1:123122323123:profile/PYWHHDDNKQP9"
     }
   ]
 }

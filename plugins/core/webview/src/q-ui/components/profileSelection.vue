@@ -23,8 +23,8 @@
                     tabindex="0"
                 >
                     <div class="text">
-                        <div class="profile-name">{{ profile.name }} - <span class="profile-region">{{ profile.region }}</span></div>
-                        <div class="profile-description">{{ profile.description }}</div>
+                        <div class="profile-name">{{ profile.profileName }} - <span class="profile-region">{{ profile.region }}</span></div>
+                        <div class="profile-id">{{ profile.accountId }}</div>
                     </div>
                 </div>
             </div>
