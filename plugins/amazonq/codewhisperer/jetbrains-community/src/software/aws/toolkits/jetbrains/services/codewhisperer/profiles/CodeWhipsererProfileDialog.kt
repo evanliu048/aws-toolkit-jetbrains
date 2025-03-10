@@ -10,9 +10,9 @@ import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.dsl.builder.*
 import com.intellij.util.application
-import migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager
 import software.amazon.awssdk.regions.Region
-import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
+import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileSelectedListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileUiItem
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
@@ -89,7 +89,11 @@ class CodeWhispererProfileDialog(
                 ApplicationManager.getApplication().messageBus
                     .syncPublisher(ProfileSelectedListener.TOPIC)
                     .profileSelected(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT_FRA, Region.of(selectedProfile.region), selectedProfile.arn)
-
+                println("send profileSelected msg")
+            }
+            else {
+                //TODO Should stop here?
+                LOG.warn { "Unexpected Profile, $selectedProfile" }
             }
             close(OK_EXIT_CODE)
         }
@@ -100,5 +104,7 @@ class CodeWhispererProfileDialog(
         val name: String,
         val description: String
     )
-
+    companion object {
+        private val LOG = getLogger<CodeWhispererProfileDialog>()
+    }
 }

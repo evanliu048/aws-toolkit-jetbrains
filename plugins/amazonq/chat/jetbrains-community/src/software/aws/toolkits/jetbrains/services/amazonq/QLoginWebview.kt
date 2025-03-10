@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.runInEdt
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
@@ -20,6 +21,8 @@ import com.intellij.ui.jcef.JBCefJSQuery
 import com.intellij.util.application
 import migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager
 import org.cef.CefApp
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.codewhispererruntime.model.Profile
 import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -39,6 +42,8 @@ import software.aws.toolkits.jetbrains.core.webview.WebviewResourceHandlerFactor
 import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
+import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileSelectedListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.isQWebviewsAvailable
@@ -102,6 +107,18 @@ class QWebviewPanel private constructor(val project: Project) : Disposable {
                 webviewContainer.add(it.component())
             }
         }
+        initProfileSelectedListener()
+    }
+
+    private fun initProfileSelectedListener() {
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
+            ProfileSelectedListener.TOPIC,
+            object : ProfileSelectedListener {
+                override fun profileSelected(endpoint: String, region: Region, profileArn: String) {
+                    disposeAndRecreate()
+                }
+            }
+        )
     }
 
     companion object {
@@ -177,6 +194,25 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
             is BrowserMessage.ProfileConfirmed -> {
                 AmazonQToolWindowFactory.setProfileSelectingInProgress(false)
                 application.messageBus.syncPublisher(RefreshQChatPanelButtonPressedListener.TOPIC).onRefresh()
+                val (endpoint, region) = when (message.region) {
+                    CodeWhispererConstants.Config.BearerClientRegion.toString() ->
+                        CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT to Region.of(message.region)
+
+                    CodeWhispererConstants.Config.BearerClientRegion_FRA.toString() ->
+                        CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT_FRA to Region.of(message.region)
+
+                    else -> {
+                        LOG.warn { "Unexpected Profile, $message" }
+                        //TODO Should stop here?
+                        CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT to Region.of(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT)
+                    }
+                }
+
+                CodeWhispererProfileManager.getInstance().setProfileAndNotify(
+                    Profile.builder().profileName(message.profileName).arn(message.profileArn).build(),
+                    endpoint,
+                    region
+                )
                 notifyInfo(
                     title = message("codewhisperer.switchProfiles.dialog.panel.title"),
                     content = message("codewhisperer.profile.usage", message.profileName),

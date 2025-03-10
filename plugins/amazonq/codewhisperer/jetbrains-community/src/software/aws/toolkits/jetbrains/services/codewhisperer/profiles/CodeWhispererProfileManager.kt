@@ -57,25 +57,31 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
         }
 
         if (profilesIad.isNotEmpty() && profilesFra.isEmpty()) {
-            setProfileAndNotify(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT, CodeWhispererConstants.Config.BearerClientRegion, profilesIad.first().arn())
+            setProfileAndNotify(profilesIad.first(), CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT, CodeWhispererConstants.Config.BearerClientRegion)
             return parseProfiles(profilesIad)
         }
         if (profilesIad.isEmpty() && profilesFra.isNotEmpty()) {
-            setProfileAndNotify(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT_FRA, CodeWhispererConstants.Config.BearerClientRegion_FRA, profilesFra.first().arn())
+            setProfileAndNotify(profilesFra.first(), CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT_FRA, CodeWhispererConstants.Config.BearerClientRegion_FRA)
             return parseProfiles(profilesFra)
         }
         val combined = parseProfiles(profilesIad) + parseProfiles(profilesFra)
         return combined
     }
 
-    private fun setProfileAndNotify(endpoint: String, region: Region, profileArn: String) {
+    override fun setProfileAndNotify(profile: Profile, endpoint: String, region: Region) {
         profileState.selectedEndpoint = endpoint
         profileState.selectedRegion = region.toString()
-        profileState.selectedProfileArn = profileArn
-
+        profileState.selectedProfileArn = profile.arn()
+        val arnPattern = Pattern.compile("arn:aws:codewhisperer:([-\\.a-z0-9]{1,63}):(\\d{12}):profile/([a-zA-Z0-9]{12})")
+        val matcher = arnPattern.matcher(profile.arn())
+        if (matcher.matches()) {
+            val accountId = matcher.group(2)
+            profileState.selectedProfileName = profile.profileName()
+            profileState.selectedProfileAccountId = accountId
+        }
         ApplicationManager.getApplication().messageBus
             .syncPublisher(ProfileSelectedListener.TOPIC)
-            .profileSelected(endpoint, region, profileArn)
+            .profileSelected(endpoint, region, profile.arn())
     }
 
     private fun fetchProfilesFromEndpoint(project: Project, endpoint: String, region: Region): List<Profile> {

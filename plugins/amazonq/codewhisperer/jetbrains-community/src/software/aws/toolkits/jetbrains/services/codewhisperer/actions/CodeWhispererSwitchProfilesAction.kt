@@ -23,19 +23,20 @@ class CodeWhispererSwitchProfilesAction :
         val project = e.project ?: return
             var mockProfiles = CodeWhispererProfileManager.getInstance().fetchAllAvailableProfiles(project)
             mockProfiles = listOf(
-                ProfileUiItem("ACME platform work", "533267146179", "us-west-2", "arn:aws:codewhisperer:us-west-2:533267146179:profile/PYWHHDDNKQP9"),
+                ProfileUiItem("ACME platform work", "533267146179", "us-east-1", "arn:aws:codewhisperer:us-west-2:533267146179:profile/PYWHHDDNKQP9"),
                 ProfileUiItem("EU Payments Team","123122323123", "eu-central-1","arn:aws:codewhisperer:us-west-2:123122323123:profile/PYWHHDDNKQP9")
 //                ProfileUiItem("AWS Security Team", "143342324234", "eu-central-2","arn:aws:codewhisperer:us-west-2:143342324234:profile/PYWHHDDNKQP9")
             )
-        val selectedProfile = CodeWhispererProfileManager.getInstance().getSelectedProfile()
-
-        if(!mockProfiles.isEmpty() &&selectedProfile !=null ){
+        var selectedProfile = CodeWhispererProfileManager.getInstance().getSelectedProfile()
+        selectedProfile = mockProfiles[0]
+        //Todo handle no profiles case
+//        if(!mockProfiles.isEmpty() &&selectedProfile !=null ){
             CodeWhispererProfileDialog(
                 project,
                 profiles = mockProfiles,
                 selectedProfile = selectedProfile
             ).show()
-        }
+//        }
     }
 }
 

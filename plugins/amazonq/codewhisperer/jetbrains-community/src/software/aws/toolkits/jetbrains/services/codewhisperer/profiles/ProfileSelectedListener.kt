@@ -8,6 +8,7 @@ import software.amazon.awssdk.regions.Region
 
 interface ProfileSelectedListener {
     companion object {
+        @Topic.AppLevel
         val TOPIC = Topic.create("CodeWhispererProfileSelected", ProfileSelectedListener::class.java)
     }
 
