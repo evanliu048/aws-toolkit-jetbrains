@@ -9,6 +9,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import com.intellij.util.text.nullize
 import software.amazon.awssdk.auth.credentials.AnonymousCredentialsProvider
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClient
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanRequest
 import software.amazon.awssdk.services.codewhisperer.model.CreateCodeScanResponse
@@ -56,6 +57,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.customization.Code
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContextNew
+import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileSelectedListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContextNew
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
@@ -105,8 +107,11 @@ interface CodeWhispererClientAdaptor : Disposable {
     fun listAvailableCustomizations(): List<CodeWhispererCustomization>
 
     fun listAvailableProfilesPaginator(
+        bearerClient: CodeWhispererRuntimeClient,
         request: ListAvailableProfilesRequest
     ): Sequence<ListAvailableProfilesResponse>
+
+    fun createTemporaryClientForEndpoint(endpoint: String, region: Region): CodeWhispererRuntimeClient
 
     fun startTestGeneration(uploadId: String, targetCode: List<TargetCode>, userInput: String): StartTestGenerationResponse
 
@@ -300,6 +305,7 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
 
     init {
         initClientUpdateListener()
+        initProfileSelectedListener()
     }
 
     private fun initClientUpdateListener() {
@@ -310,6 +316,23 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                     if (newConnection is AwsBearerTokenConnection) {
                         myBearerClient = getBearerClient(newConnection.getConnectionSettings().providerId)
                     }
+                }
+            }
+        )
+    }
+
+    private fun initProfileSelectedListener() {
+        ApplicationManager.getApplication().messageBus.connect(this).subscribe(
+            ProfileSelectedListener.TOPIC,
+            object : ProfileSelectedListener {
+                override fun profileSelected(endpoint: String, region: Region, profileArn: String) {
+                    myBearerClient?.close()
+                    myBearerClient = null
+                    myBearerClient = AwsClientManager.getInstance().createUnmanagedClient(
+                        AnonymousCredentialsProvider.create(), //TODO which provider is needed here
+                        region,
+                        endpoint
+                    )
                 }
             }
         )
@@ -378,13 +401,22 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
                 }
             }
 
-    override fun listAvailableProfilesPaginator(request: ListAvailableProfilesRequest) = sequence<ListAvailableProfilesResponse> {
+    override fun listAvailableProfilesPaginator(bearerClient: CodeWhispererRuntimeClient, request: ListAvailableProfilesRequest) = sequence<ListAvailableProfilesResponse> {
         var nextToken: String? = request.nextToken()
         do {
-            val response = bearerClient().listAvailableProfiles(request.copy { it.nextToken(nextToken) })
+            val response = bearerClient.listAvailableProfiles(request.copy { it.nextToken(nextToken) })
             nextToken = response.nextToken()
             yield(response)
         } while (!nextToken.isNullOrEmpty())
+    }
+
+    override fun createTemporaryClientForEndpoint(endpoint: String, region: Region): CodeWhispererRuntimeClient {
+//        TODO "what provider is needed here
+        return AwsClientManager.getInstance().createUnmanagedClient(
+            AnonymousCredentialsProvider.create(), // 或者你也可以换成 SSO BearerTokenProvider
+            region,
+            endpoint
+        )
     }
 
     override fun startTestGeneration(uploadId: String, targetCode: List<TargetCode>, userInput: String): StartTestGenerationResponse =

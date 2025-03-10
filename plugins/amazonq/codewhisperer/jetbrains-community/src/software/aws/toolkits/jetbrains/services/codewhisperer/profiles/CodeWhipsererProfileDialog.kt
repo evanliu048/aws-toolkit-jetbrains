@@ -4,24 +4,31 @@
 package software.aws.toolkits.jetbrains.services.codewhisperer.profile
 
 import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.dsl.builder.*
+import com.intellij.util.application
 import migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager
+import software.amazon.awssdk.regions.Region
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileSelectedListener
+import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileUiItem
+import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.notifyInfo
 import software.aws.toolkits.resources.message
 import javax.swing.ButtonGroup
 import javax.swing.JComponent
 
 class CodeWhispererProfileDialog(
-    private val project: Project,
-    private val profiles: List<ProfileItem>,
-    private var selectedProfile: ProfileItem //default
+    private var project: Project,
+    private var profiles: List<ProfileUiItem>,
+    private var selectedProfile: ProfileUiItem //default
 ) : DialogWrapper(project), Disposable {
 
     private lateinit var panel: DialogPanel
-    private var selectedOption: ProfileItem? = selectedProfile //user selected
+    private var selectedOption: ProfileUiItem? = selectedProfile //user selected
 
     override fun dispose() {
         super.dispose()
@@ -39,8 +46,6 @@ class CodeWhispererProfileDialog(
         return ""
     }
     override fun createCenterPanel(): JComponent {
-//        val profileList = CodeWhispererProfileManager.getInstance().fetchAllAvailableProfiles(project);
-//        println(profileList)
         panel = panel {
             row {
                 label(message("codewhisperer.switchProfiles.dialog.panel.title")).bold()
@@ -53,7 +58,7 @@ class CodeWhispererProfileDialog(
             buttonsGroup {
                 profiles.forEach { profile ->
                     row {
-                        val radioButton = radioButton(profile.name, profile)
+                        val radioButton = radioButton(profile.profileName, profile)
                         radioButton.actionListener { _, component ->
                             if (component.isSelected) {
                                 selectedOption = profile
@@ -68,22 +73,29 @@ class CodeWhispererProfileDialog(
     }
     override fun doOKAction() {
         panel.apply()
-
         if (selectedOption != selectedProfile) {
-            selectedOption?.let { switchProfile(it) }
+            notifyInfo(
+                title = message("codewhisperer.switchProfiles.dialog.panel.title"),
+                content = message("codewhisperer.profile.usage", selectedProfile.profileName),
+                project = project
+            )
+
+            if (selectedProfile.region === CodeWhispererConstants.Config.BearerClientRegion.toString()) {
+                ApplicationManager.getApplication().messageBus
+                    .syncPublisher(ProfileSelectedListener.TOPIC)
+                    .profileSelected(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT, Region.of(selectedProfile.region), selectedProfile.arn)
+
+            } else if (selectedProfile.region === CodeWhispererConstants.Config.BearerClientRegion_FRA.toString()) {
+                ApplicationManager.getApplication().messageBus
+                    .syncPublisher(ProfileSelectedListener.TOPIC)
+                    .profileSelected(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT_FRA, Region.of(selectedProfile.region), selectedProfile.arn)
+
+            }
+            close(OK_EXIT_CODE)
         }
-
-        close(OK_EXIT_CODE)
     }
 
-    private fun switchProfile(profile: ProfileItem) {
-        notifyInfo(
-            title = message("codewhisperer.switchProfiles.dialog.panel.title"),
-            content = message("codewhisperer.profile.usage", profile.name),
-            project = project
-        )
-        // TODO: Implement actual profile switching logic
-    }
+
     data class ProfileItem(
         val name: String,
         val description: String

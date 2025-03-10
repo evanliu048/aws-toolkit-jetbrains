@@ -18,13 +18,13 @@
                     v-for="(profile, index) in profiles"
                     :key="index"
                     class="profile-item bottom-small-gap"
-                    :class="{ selected: selectedProfile?.name === profile.name }"
+                    :class="{ selected: selectedProfile?.arn === profile.arn }"
                     @click="toggleItemSelection(profile)"
                     tabindex="0"
                 >
                     <div class="text">
                         <div class="profile-name">{{ profile.profileName }} - <span class="profile-region">{{ profile.region }}</span></div>
-                        <div class="profile-id">{{ profile.accountId }}</div>
+                        <div class="profile-id">Account: {{ profile.accountId }}</div>
                     </div>
                 </div>
             </div>
@@ -72,9 +72,13 @@ export default defineComponent({
         handleContinueClick() {
             if (this.selectedProfile) {
                 this.$store.commit('setSelectedProfile', this.selectedProfile);
-                window.ideApi.postMessage({
+                const profileConfirmedMessage = {
                     command: 'profileConfirmed',
-                });
+                    profileName: this.selectedProfile.profileName,
+                    region: this.selectedProfile.region,
+                    profileArn: this.selectedProfile.arn
+                };
+               window.ideApi.postMessage(profileConfirmedMessage);
             }
         }
     }
@@ -108,7 +112,7 @@ export default defineComponent({
 }
 
 .selected {
-    border: 1px solid #29a7ff;
+    user-select: none;
 }
 
 .text {

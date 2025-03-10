@@ -14,6 +14,9 @@ interface CodeWhispererProfileManager {
 
     fun fetchAllAvailableProfiles(project: Project) : List<ProfileUiItem>?
 
+    fun getSelectedProfile(): ProfileUiItem?
+
+
         companion object {
         fun getInstance(): CodeWhispererProfileManager = service()
     }

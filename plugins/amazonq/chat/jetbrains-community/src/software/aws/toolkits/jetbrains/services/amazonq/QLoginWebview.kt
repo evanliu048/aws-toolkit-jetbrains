@@ -42,6 +42,8 @@ import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
 import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
 import software.aws.toolkits.jetbrains.utils.isQWebviewsAvailable
+import software.aws.toolkits.jetbrains.utils.notifyInfo
+import software.aws.toolkits.resources.message
 import software.aws.toolkits.telemetry.FeatureId
 import software.aws.toolkits.telemetry.UiTelemetry
 import software.aws.toolkits.telemetry.WebviewTelemetry
@@ -175,6 +177,11 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
             is BrowserMessage.ProfileConfirmed -> {
                 AmazonQToolWindowFactory.setProfileSelectingInProgress(false)
                 application.messageBus.syncPublisher(RefreshQChatPanelButtonPressedListener.TOPIC).onRefresh()
+                notifyInfo(
+                    title = message("codewhisperer.switchProfiles.dialog.panel.title"),
+                    content = message("codewhisperer.profile.usage", message.profileName),
+                    project = project
+                )
             }
 
             is BrowserMessage.CancelLogin -> {

@@ -62,7 +62,11 @@ sealed interface BrowserMessage {
 
     object Reauth : BrowserMessage
 
-    object ProfileConfirmed: BrowserMessage
+    data class ProfileConfirmed(
+        val profileName: String,
+        val region: String,
+        val profileArn: String
+    ): BrowserMessage
 
     data class SendUiClickTelemetry(val signInOptionClicked: String?) : BrowserMessage
 }

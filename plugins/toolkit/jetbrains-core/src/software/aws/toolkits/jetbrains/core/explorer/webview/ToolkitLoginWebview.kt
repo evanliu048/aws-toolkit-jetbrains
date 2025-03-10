@@ -248,7 +248,7 @@ class ToolkitWebviewBrowser(val project: Project, private val parentDisposable: 
 
             }
 
-            BrowserMessage.ProfileConfirmed -> {
+            is BrowserMessage.ProfileConfirmed -> {
 
             }
         }

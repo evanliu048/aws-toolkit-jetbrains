@@ -157,9 +157,13 @@ object CodeWhispererConstants {
         val CODEWHISPERER_ENDPOINT
             get() = Registry.get("amazon.q.endpoint").asString()
 
+        val CODEWHISPERER_ENDPOINT_FRA: String
+            get() = Registry.get("amazon.q.endpoint.fra").asString()
+
         const val CODEWHISPERER_IDPOOL_ID = "us-east-1:70717e99-906f-4add-908c-bd9074a2f5b9"
         val Sigv4ClientRegion = Region.US_EAST_1
         val BearerClientRegion = Region.US_EAST_1
+        val BearerClientRegion_FRA = Region.EU_CENTRAL_1
     }
 
     object Customization {

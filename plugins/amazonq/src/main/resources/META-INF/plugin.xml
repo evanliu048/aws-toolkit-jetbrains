@@ -86,6 +86,9 @@
     <extensions defaultExtensionNs="com.intellij">
         <registryKey key="amazon.q.endpoint" description="Endpoint to use for Amazon Q"
                      defaultValue="https://codewhisperer.us-east-1.amazonaws.com/" restartRequired="true"/>
+        <registryKey key="amazon.q.endpoint.fra" description="Endpoint to use for Amazon Q in FRA"
+            defaultValue="https://rts.prod-eu-central-1.codewhisperer.ai.aws.dev/" restartRequired="true"/>
+
     </extensions>
 
     <xi:include href="/META-INF/module-amazonq.xml" />
