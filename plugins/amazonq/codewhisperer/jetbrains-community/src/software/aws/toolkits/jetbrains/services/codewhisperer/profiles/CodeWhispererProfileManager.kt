@@ -11,6 +11,7 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.State
 import com.intellij.openapi.components.Storage
 import com.intellij.openapi.project.Project
+import com.intellij.util.xmlb.annotations.MapAnnotation
 import com.intellij.util.xmlb.annotations.Property
 import migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager
 import software.amazon.awssdk.regions.Region
@@ -22,6 +23,7 @@ import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.jetbrains.services.amazonq.calculateIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
+import java.util.Collections
 import java.util.regex.Pattern
 
 @Service(Service.Level.APP)
@@ -37,6 +39,10 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
     private var selectedProfileArn: String? = null
     private var selectedProfileName: String? = null
     private var selectedProfileAccountId: String? = null
+
+    // Map to store connectionId to its active customization
+    private val connectionIdToActiveProfile = Collections.synchronizedMap<String, ProfileUiItem>(mutableMapOf())
+
 
 
     override fun fetchAllAvailableProfiles(project: Project): List<ProfileUiItem>? {
@@ -84,6 +90,29 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
             .profileSelected(endpoint, region, profile.arn())
     }
 
+    override fun activeProfile(project: Project): ProfileUiItem? {
+        val selectedProfile = calculateIfIamIdentityCenterConnection(project) { connectionIdToActiveProfile[it.id] }
+        return selectedProfile
+    }
+
+    override fun switchProfile(project: Project, newProfileUiItem: ProfileUiItem?) {
+        calculateIfIamIdentityCenterConnection(project) {
+            if (newProfileUiItem == null || newProfileUiItem.arn.isEmpty()) {
+                return@calculateIfIamIdentityCenterConnection
+            }
+            val oldPro = connectionIdToActiveProfile[it.id]
+            if (oldPro != newProfileUiItem) {
+                newProfileUiItem.let { newPro ->
+                    connectionIdToActiveProfile[it.id] = newPro
+                }
+
+                LOG.debug { "Switch from profile $oldPro to $newProfileUiItem" }
+
+                //TODO refresh UI? if newProfileUiItem == null
+
+            }
+        }
+    }
     private fun fetchProfilesFromEndpoint(project: Project, endpoint: String, region: Region): List<Profile> {
         val tmpClient: CodeWhispererRuntimeClient = CodeWhispererClientAdaptor.getInstance(project).createTemporaryClientForEndpoint(
             endpoint = endpoint, region = region
@@ -160,6 +189,7 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
         state.selectedProfileArn = this.selectedProfileArn
         state.selectedProfileName = this.selectedProfileName
         state.selectedProfileAccountId = this.selectedProfileAccountId
+        state.connectionIdToActiveProfile.putAll(this.connectionIdToActiveProfile)
         return state
     }
 
@@ -169,6 +199,8 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
         this.selectedProfileArn = state.selectedProfileArn
         this.selectedProfileName = state.selectedProfileName
         this.selectedProfileAccountId = state.selectedProfileAccountId
+        connectionIdToActiveProfile.clear()
+        connectionIdToActiveProfile.putAll(state.connectionIdToActiveProfile)
     }
 
 }
@@ -188,6 +220,11 @@ class CodeWhispererProfileState: BaseState() {
 
     @get:Property
     var selectedProfileAccountId by string()
+
+    @get:Property
+    @get:MapAnnotation
+    val connectionIdToActiveProfile by map<String, ProfileUiItem>()
+
 }
 data class ProfileUiItem(
     val profileName: String,

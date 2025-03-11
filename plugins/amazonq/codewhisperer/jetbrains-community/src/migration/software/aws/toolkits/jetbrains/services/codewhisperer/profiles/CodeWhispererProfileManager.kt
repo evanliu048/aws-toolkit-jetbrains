@@ -8,6 +8,7 @@ import com.intellij.openapi.project.Project
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableProfilesRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.Profile
+import software.aws.toolkits.jetbrains.services.codewhisperer.customization.CodeWhispererCustomization
 import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileUiItem
 
 interface CodeWhispererProfileManager {
@@ -18,6 +19,10 @@ interface CodeWhispererProfileManager {
     fun getSelectedProfile(): ProfileUiItem?
 
     fun setProfileAndNotify(profile: Profile, endpoint: String, region: Region)
+
+    fun activeProfile(project: Project): ProfileUiItem?
+
+    fun switchProfile(project: Project, profileUiItem: ProfileUiItem?)
 
 
 
