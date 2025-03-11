@@ -68,9 +68,9 @@ class QStatusBarLoggedInActionGroup : DefaultActionGroup() {
 
             add(Separator.create())
             add(CodeWhispererShowSettingsAction())
-            add(CodeWhispererSwitchProfilesAction())
             ToolkitConnectionManager.getInstance(it).activeConnectionForFeature(CodeWhispererConnection.getInstance())?.let { c ->
                 (c as? AwsBearerTokenConnection)?.let { connection ->
+                    add(CodeWhispererSwitchProfilesAction())
                     add(SsoLogoutAction(connection))
                 }
             }
