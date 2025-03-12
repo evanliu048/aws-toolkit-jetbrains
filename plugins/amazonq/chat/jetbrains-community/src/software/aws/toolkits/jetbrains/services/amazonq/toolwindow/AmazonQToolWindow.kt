@@ -16,6 +16,7 @@ import com.intellij.openapi.wm.ToolWindowManager
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import migration.software.aws.toolkits.jetbrains.services.codewhisperer.profiles.CodeWhispererProfileManager
 import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.jetbrains.services.amazonq.QWebviewPanel
 import software.aws.toolkits.jetbrains.services.amazonq.apps.AmazonQAppInitContext
@@ -141,7 +142,9 @@ class AmazonQToolWindow private constructor(
             isCodeScanAvailable = isCodeScanAvailable(project),
             isCodeTestAvailable = isCodeTestAvailable(project),
             isDocAvailable = isDocAvailable(project),
-            highlightCommand = highlightCommand()
+            highlightCommand = highlightCommand(),
+            activeProfile = CodeWhispererProfileManager.getInstance().activeProfile(project)
+
         )
 
         scope.launch {

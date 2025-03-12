@@ -39,15 +39,6 @@ import java.util.regex.Pattern
 class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
     PersistentStateComponent<CodeWhispererProfileState>, Disposable {
 
-    private var profileState = CodeWhispererProfileState()
-
-
-    private var selectedRegion: String? = null
-    private var selectedEndPoint: String? = null
-    private var selectedProfileArn: String? = null
-    private var selectedProfileName: String? = null
-    private var selectedProfileAccountId: String? = null
-
     // Map to store connectionId to its active customization
     private val connectionIdToActiveProfile = Collections.synchronizedMap<String, ProfileUiItem>(mutableMapOf())
 
@@ -89,6 +80,7 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
             if (matcher.matches()) {
                 val accountId = matcher.group(2)
                 connectionIdToActiveProfile[it.id] = ProfileUiItem (profile.profileName(),  accountId, region.id(), profile.arn(), endpoint)
+                println("save here")
             }
             else{
                 LOG.warn { "setProfileAndNotify: profile arn is not valid" }
@@ -102,6 +94,7 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
 
     override fun activeProfile(project: Project): ProfileUiItem? {
         val selectedProfile = calculateIfIamIdentityCenterConnection(project) { connectionIdToActiveProfile[it.id] }
+        println("here is profile $selectedProfile")
         return selectedProfile
     }
 
@@ -179,21 +172,11 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
 
     override fun getState(): CodeWhispererProfileState {
         val state = CodeWhispererProfileState()
-        state.selectedEndpoint = this.selectedEndPoint
-        state.selectedRegion = this.selectedRegion
-        state.selectedProfileArn = this.selectedProfileArn
-        state.selectedProfileName = this.selectedProfileName
-        state.selectedProfileAccountId = this.selectedProfileAccountId
         state.connectionIdToActiveProfile.putAll(this.connectionIdToActiveProfile)
         return state
     }
 
     override fun loadState(state: CodeWhispererProfileState) {
-        this.selectedEndPoint = state.selectedEndpoint
-        this.selectedRegion = state.selectedRegion
-        this.selectedProfileArn = state.selectedProfileArn
-        this.selectedProfileName = state.selectedProfileName
-        this.selectedProfileAccountId = state.selectedProfileAccountId
         connectionIdToActiveProfile.clear()
         connectionIdToActiveProfile.putAll(state.connectionIdToActiveProfile)
     }
@@ -202,30 +185,29 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
 
 class CodeWhispererProfileState: BaseState() {
     @get:Property
-    var selectedEndpoint by string()
-
-    @get:Property
-    var selectedRegion by string()
-
-    @get:Property
-    var selectedProfileArn by string()
-
-    @get:Property
-    var selectedProfileName by string()
-
-    @get:Property
-    var selectedProfileAccountId by string()
-
-    @get:Property
     @get:MapAnnotation
     val connectionIdToActiveProfile by map<String, ProfileUiItem>()
 
 }
 data class ProfileUiItem(
-    val profileName: String,
-    val accountId: String,
-    val region: String,
-    val arn: String,
-    val endpoint: String
+    @JvmField
+    @get:Property
+    var profileName: String = "",
+
+    @JvmField
+    @get:Property
+    var accountId: String = "",
+
+    @JvmField
+    @get:Property
+    var region: String = "",
+
+    @JvmField
+    @get:Property
+    var arn: String = "",
+
+    @JvmField
+    @get:Property
+    var endpoint: String = ""
 )
 
