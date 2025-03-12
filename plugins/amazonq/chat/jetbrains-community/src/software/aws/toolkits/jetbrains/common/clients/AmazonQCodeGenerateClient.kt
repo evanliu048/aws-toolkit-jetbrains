@@ -3,6 +3,8 @@
 
 package software.aws.toolkits.jetbrains.common.clients
 
+import com.intellij.openapi.Disposable
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -36,13 +38,18 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
 import software.aws.toolkits.jetbrains.services.amazonqDoc.FEATURE_EVALUATION_PRODUCT_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.calculateTotalLatency
+import software.aws.toolkits.jetbrains.services.ProfileSelectedListener
+import software.aws.toolkits.jetbrains.services.amazonq.clients.AbstractProfileAwareClient
 import software.aws.toolkits.jetbrains.services.telemetry.ClientMetadata
 import software.aws.toolkits.jetbrains.settings.AwsSettings
 import java.time.Instant
 import software.amazon.awssdk.services.codewhispererruntime.model.ChatTriggerType as SyncChatTriggerType
 
 @Service(Service.Level.PROJECT)
-class AmazonQCodeGenerateClient(private val project: Project) {
+class AmazonQCodeGenerateClient(override val project: Project) : AbstractProfileAwareClient(project) {
+
+    private val myBearerClient = bearerClient()
+
     private fun getTelemetryOptOutPreference() =
         if (AwsSettings.getInstance().isTelemetryEnabled) {
             OptOutPreference.OPTIN
@@ -68,11 +75,6 @@ class AmazonQCodeGenerateClient(private val project: Project) {
             .build()
     }
 
-    fun connection() = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
-        ?: error("Attempted to use connection while one does not exist")
-
-    fun bearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererRuntimeClient>()
-
     private val amazonQStreamingClient
         get() = AmazonQStreamingClient.getInstance(project)
 
@@ -80,7 +82,7 @@ class AmazonQCodeGenerateClient(private val project: Project) {
         generationEvent: DocV2GenerationEvent? = null,
         acceptanceEvent: DocV2AcceptanceEvent? = null,
     ): SendTelemetryEventResponse =
-        bearerClient().sendTelemetryEvent { requestBuilder ->
+        myBearerClient.sendTelemetryEvent { requestBuilder ->
             requestBuilder.telemetryEvent { telemetryEventBuilder ->
                 generationEvent?.let { telemetryEventBuilder.docV2GenerationEvent(it) }
                 acceptanceEvent?.let { telemetryEventBuilder.docV2AcceptanceEvent(it) }
@@ -94,7 +96,7 @@ class AmazonQCodeGenerateClient(private val project: Project) {
     )
 
     fun createTaskAssistUploadUrl(conversationId: String, contentChecksumSha256: String, contentLength: Long): CreateUploadUrlResponse =
-        bearerClient().createUploadUrl {
+        myBearerClient.createUploadUrl {
             it.contentChecksumType(ContentChecksumType.SHA_256)
                 .contentChecksum(contentChecksumSha256)
                 .contentLength(contentLength)
@@ -112,7 +114,7 @@ class AmazonQCodeGenerateClient(private val project: Project) {
         }
 
     fun startTaskAssistCodeGeneration(conversationId: String, uploadId: String, userMessage: String, intent: Intent): StartTaskAssistCodeGenerationResponse =
-        bearerClient()
+        myBearerClient
             .startTaskAssistCodeGeneration { request ->
                 request
                     .conversationState {

@@ -19,6 +19,7 @@ import software.amazon.awssdk.core.retry.RetryPolicy
 import software.amazon.awssdk.http.SdkHttpRequest
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient
 import software.amazon.awssdk.http.nio.netty.ProxyConfiguration
+import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.codewhisperer.CodeWhispererClientBuilder
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClientBuilder
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClientBuilder
@@ -44,10 +45,11 @@ class CodeWhispererEndpointCustomizer : ToolkitClientCustomizer {
         clientOverrideConfiguration: ClientOverrideConfiguration.Builder,
     ) {
         if (builder is CodeWhispererRuntimeClientBuilder || builder is CodeWhispererStreamingAsyncClientBuilder) {
-            val endpoint = URI.create(CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT)
+            val endpoint = URI.create(CodeWhispererConstants.Config.getEndpointForRegion(Region.of(regionId)))
+            val bearerRegion = CodeWhispererConstants.Config.getRegionForEndpoint(endpoint.toString())
             builder
                 .endpointOverride(endpoint)
-                .region(CodeWhispererConstants.Config.BearerClientRegion)
+                .region(bearerRegion)
             clientOverrideConfiguration.retryPolicy(RetryPolicy.none())
             clientOverrideConfiguration.addExecutionInterceptor(
                 object : ExecutionInterceptor {

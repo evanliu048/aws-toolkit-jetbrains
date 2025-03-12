@@ -9,11 +9,10 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.DialogPanel
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.dsl.builder.*
-import com.intellij.util.application
 import software.amazon.awssdk.regions.Region
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
-import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileSelectedListener
+import software.aws.toolkits.jetbrains.services.ProfileSelectedListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileUiItem
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.notifyInfo
@@ -99,11 +98,6 @@ class CodeWhispererProfileDialog(
         }
     }
 
-
-    data class ProfileItem(
-        val name: String,
-        val description: String
-    )
     companion object {
         private val LOG = getLogger<CodeWhispererProfileDialog>()
     }

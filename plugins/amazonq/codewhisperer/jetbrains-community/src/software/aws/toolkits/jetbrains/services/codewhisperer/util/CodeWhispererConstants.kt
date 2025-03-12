@@ -164,6 +164,21 @@ object CodeWhispererConstants {
         val Sigv4ClientRegion = Region.US_EAST_1
         val BearerClientRegion = Region.US_EAST_1
         val BearerClientRegion_FRA = Region.EU_CENTRAL_1
+
+        // Mapping for region-to-endpoint and endpoint-to-region
+        private val REGION_ENDPOINT_MAP = mapOf(
+            BearerClientRegion to CODEWHISPERER_ENDPOINT,
+            BearerClientRegion_FRA to CODEWHISPERER_ENDPOINT_FRA
+        )
+
+        private val ENDPOINT_REGION_MAP = REGION_ENDPOINT_MAP.entries.associate { (k, v) -> v to k }
+
+        // Utility functions for consistent mapping
+        fun getEndpointForRegion(region: Region): String =
+            REGION_ENDPOINT_MAP[region] ?: CODEWHISPERER_ENDPOINT
+
+        fun getRegionForEndpoint(endpoint: String): Region =
+            ENDPOINT_REGION_MAP[endpoint] ?: BearerClientRegion
     }
 
     object Customization {

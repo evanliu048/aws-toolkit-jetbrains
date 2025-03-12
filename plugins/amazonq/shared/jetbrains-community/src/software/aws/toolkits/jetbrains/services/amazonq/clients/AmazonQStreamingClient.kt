@@ -3,33 +3,57 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq.clients
 
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
 import kotlinx.coroutines.future.await
 import software.amazon.awssdk.core.exception.SdkException
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererstreaming.CodeWhispererStreamingAsyncClient
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportContext
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportIntent
 import software.amazon.awssdk.services.codewhispererstreaming.model.ExportResultArchiveResponseHandler
 import software.amazon.awssdk.services.codewhispererstreaming.model.ThrottlingException
 import software.amazon.awssdk.services.codewhispererstreaming.model.ValidationException
+import software.aws.toolkits.core.region.AwsRegion
+import software.aws.toolkits.core.utils.error
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.AwsClientManager
 import software.aws.toolkits.jetbrains.core.awsClient
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
 import software.aws.toolkits.jetbrains.services.amazonq.RetryableOperation
+import java.net.URI
 import java.time.Instant
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicReference
 
 @Service(Service.Level.PROJECT)
-class AmazonQStreamingClient(private val project: Project) {
-    private fun connection() = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
-        ?: error("Attempted to use connection while one does not exist")
+class AmazonQStreamingClient(override val project: Project) :AbstractProfileAwareClient(project) {
 
-    private fun streamingBearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererStreamingAsyncClient>()
+    private var streamingBearerClient = streamingBearerClient()
+
+    private fun streamingBearerClient(): CodeWhispererStreamingAsyncClient {
+        if (streamingBearerClient != null) return streamingBearerClient as CodeWhispererStreamingAsyncClient
+        streamingBearerClient = AwsClientManager.getInstance().getClient<CodeWhispererStreamingAsyncClient>(connection().getConnectionSettings())
+        return streamingBearerClient as CodeWhispererStreamingAsyncClient
+    }
+
+    override fun updateBearerClient(endpoint: String, region: Region) {
+        try {
+            val awsRegion = AwsRegionProvider.getInstance()[region.id()] ?: error("unknown region returned from Q browser")
+            val newSettings = connection().getConnectionSettings().withRegion(awsRegion)
+            streamingBearerClient = AwsClientManager.getInstance().getClient<CodeWhispererStreamingAsyncClient>(newSettings)
+        } catch (e: Exception) {
+            LOG.error(e) { "Fail to update streamingClient" }
+        }
+    }
 
     suspend fun exportResultArchive(
         exportId: String,
@@ -61,7 +85,7 @@ class AmazonQStreamingClient(private val project: Project) {
         try {
             RetryableOperation<Unit>().executeSuspend(
                 operation = {
-                    val result = streamingBearerClient().exportResultArchive(
+                    val result = streamingBearerClient.exportResultArchive(
                         {
                             it.exportId(exportId)
                             it.exportIntent(exportIntent)

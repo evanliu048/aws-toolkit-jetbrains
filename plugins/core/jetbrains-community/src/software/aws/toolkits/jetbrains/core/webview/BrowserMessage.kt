@@ -26,7 +26,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
     JsonSubTypes.Type(value = BrowserMessage.Signout::class, name = "signout"),
     JsonSubTypes.Type(value = BrowserMessage.Reauth::class, name = "reauth"),
     JsonSubTypes.Type(value = BrowserMessage.SendUiClickTelemetry::class, name = "sendUiClickTelemetry"),
-    JsonSubTypes.Type(value = BrowserMessage.ListProfiles::class, name = "listProfiles"),
     JsonSubTypes.Type(value = BrowserMessage.ProfileConfirmed::class, name = "profileConfirmed"),
 
     )
@@ -53,8 +52,6 @@ sealed interface BrowserMessage {
         val accessKey: String,
         val secretKey: String,
     ) : BrowserMessage
-
-    object ListProfiles: BrowserMessage
 
     object CancelLogin : BrowserMessage
 

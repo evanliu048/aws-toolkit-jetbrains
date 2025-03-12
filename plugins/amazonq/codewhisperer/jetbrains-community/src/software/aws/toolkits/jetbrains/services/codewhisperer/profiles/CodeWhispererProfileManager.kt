@@ -18,8 +18,16 @@ import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.codewhispererruntime.CodeWhispererRuntimeClient
 import software.amazon.awssdk.services.codewhispererruntime.model.ListAvailableProfilesRequest
 import software.amazon.awssdk.services.codewhispererruntime.model.Profile
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
+import software.aws.toolkits.core.utils.warn
+import software.aws.toolkits.jetbrains.core.AwsClientManager
+import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
+import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
+import software.aws.toolkits.jetbrains.core.credentials.pinning.CodeWhispererConnection
+import software.aws.toolkits.jetbrains.core.region.AwsRegionProvider
+import software.aws.toolkits.jetbrains.services.ProfileSelectedListener
 import software.aws.toolkits.jetbrains.services.amazonq.calculateIfIamIdentityCenterConnection
 import software.aws.toolkits.jetbrains.services.codewhisperer.credentials.CodeWhispererClientAdaptor
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
@@ -63,31 +71,33 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
         }
 
         if (profilesIad.isNotEmpty() && profilesFra.isEmpty()) {
-            setProfileAndNotify(profilesIad.first(), CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT, CodeWhispererConstants.Config.BearerClientRegion)
+            setProfileAndNotify(project, profilesIad.first(), CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT, CodeWhispererConstants.Config.BearerClientRegion)
             return parseProfiles(profilesIad)
         }
         if (profilesIad.isEmpty() && profilesFra.isNotEmpty()) {
-            setProfileAndNotify(profilesFra.first(), CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT_FRA, CodeWhispererConstants.Config.BearerClientRegion_FRA)
+            setProfileAndNotify(project, profilesFra.first(), CodeWhispererConstants.Config.CODEWHISPERER_ENDPOINT_FRA, CodeWhispererConstants.Config.BearerClientRegion_FRA)
             return parseProfiles(profilesFra)
         }
         val combined = parseProfiles(profilesIad) + parseProfiles(profilesFra)
         return combined
     }
 
-    override fun setProfileAndNotify(profile: Profile, endpoint: String, region: Region) {
-        profileState.selectedEndpoint = endpoint
-        profileState.selectedRegion = region.toString()
-        profileState.selectedProfileArn = profile.arn()
-        val arnPattern = Pattern.compile("arn:aws:codewhisperer:([-\\.a-z0-9]{1,63}):(\\d{12}):profile/([a-zA-Z0-9]{12})")
-        val matcher = arnPattern.matcher(profile.arn())
-        if (matcher.matches()) {
-            val accountId = matcher.group(2)
-            profileState.selectedProfileName = profile.profileName()
-            profileState.selectedProfileAccountId = accountId
+    override fun setProfileAndNotify(project: Project, profile: Profile, endpoint: String, region: Region) {
+        calculateIfIamIdentityCenterConnection(project){
+            val arnPattern = Pattern.compile("arn:aws:codewhisperer:([-\\.a-z0-9]{1,63}):(\\d{12}):profile/([a-zA-Z0-9]{12})")
+            val matcher = arnPattern.matcher(profile.arn())
+            if (matcher.matches()) {
+                val accountId = matcher.group(2)
+                connectionIdToActiveProfile[it.id] = ProfileUiItem (profile.profileName(),  accountId, region.id(), profile.arn(), endpoint)
+            }
+            else{
+                LOG.warn { "setProfileAndNotify: profile arn is not valid" }
+            }
+            ApplicationManager.getApplication().messageBus
+                .syncPublisher(ProfileSelectedListener.TOPIC)
+                .profileSelected(endpoint, region, profile.arn())
         }
-        ApplicationManager.getApplication().messageBus
-            .syncPublisher(ProfileSelectedListener.TOPIC)
-            .profileSelected(endpoint, region, profile.arn())
+
     }
 
     override fun activeProfile(project: Project): ProfileUiItem? {
@@ -95,18 +105,18 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
         return selectedProfile
     }
 
-    override fun switchProfile(project: Project, newProfileUiItem: ProfileUiItem?) {
+    override fun switchProfile(project: Project, newProfile: ProfileUiItem?) {
         calculateIfIamIdentityCenterConnection(project) {
-            if (newProfileUiItem == null || newProfileUiItem.arn.isEmpty()) {
+            if (newProfile == null || newProfile.arn.isEmpty()) {
                 return@calculateIfIamIdentityCenterConnection
             }
             val oldPro = connectionIdToActiveProfile[it.id]
-            if (oldPro != newProfileUiItem) {
-                newProfileUiItem.let { newPro ->
+            if (oldPro != newProfile) {
+                newProfile.let { newPro ->
                     connectionIdToActiveProfile[it.id] = newPro
                 }
 
-                LOG.debug { "Switch from profile $oldPro to $newProfileUiItem" }
+                LOG.debug { "Switch from profile $oldPro to $newProfile" }
 
                 //TODO refresh UI? if newProfileUiItem == null
 
@@ -114,9 +124,14 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
         }
     }
     private fun fetchProfilesFromEndpoint(project: Project, endpoint: String, region: Region): List<Profile> {
-        val tmpClient: CodeWhispererRuntimeClient = CodeWhispererClientAdaptor.getInstance(project).createTemporaryClientForEndpoint(
-            endpoint = endpoint, region = region
-        )
+        val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
+        connection as? AwsBearerTokenConnection ?: run {
+            LOG.warn { "$connection is not a bearer token connection when fetch profiles from endpoint $endpoint" }
+            return emptyList()
+        }
+        val awsRegion = AwsRegionProvider.getInstance()[region.id()] ?: error("unknown region returned from Q browser")
+        val tmpClient: CodeWhispererRuntimeClient = AwsClientManager.getInstance().getClient<CodeWhispererRuntimeClient>(connection.getConnectionSettings().withRegion(awsRegion))
+
         val req = ListAvailableProfilesRequest.builder().maxResults(2).build()
         return try {
             val paginator = CodeWhispererClientAdaptor.getInstance(project).listAvailableProfilesPaginator(tmpClient, req)
@@ -146,33 +161,13 @@ class DefaultCodeWhispererProfileManager: CodeWhispererProfileManager,
                     profileName = profile.profileName(),
                     accountId = accountId,
                     region = region,
-                    arn = profile.arn()
-                )
+                    arn = profile.arn(),
+                    endpoint = CodeWhispererConstants.Config.getEndpointForRegion(Region.of(region)))
             } else {
                 null
             }
         }
     }
-
-    override fun getSelectedProfile(): ProfileUiItem? {
-        return with(profileState) {
-            if (!selectedProfileName.isNullOrEmpty() &&
-                !selectedProfileAccountId.isNullOrEmpty() &&
-                !selectedRegion.isNullOrEmpty() &&
-                !selectedProfileArn.isNullOrEmpty())
-            {
-                ProfileUiItem(
-                    profileName = selectedProfileName!!,
-                    accountId = selectedProfileAccountId!!,
-                    region = selectedRegion!!,
-                    arn = selectedProfileArn!!
-                )
-            } else {
-                null
-            }
-        }
-    }
-
 
 
     companion object {
@@ -230,6 +225,7 @@ data class ProfileUiItem(
     val profileName: String,
     val accountId: String,
     val region: String,
-    val arn: String
+    val arn: String,
+    val endpoint: String
 )
 

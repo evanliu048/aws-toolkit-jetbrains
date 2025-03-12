@@ -160,14 +160,16 @@ class AmazonQToolWindowFactory : ToolWindowFactory, DumbAware {
     {
       "profileName": "ACME platform work",
       "accountId": "533267146179",
-      "region": "us-west-2",
-      "arn": "arn:aws:codewhisperer:us-west-2:533267146179:profile/PYWHHDDNKQP9"
+      "region": "us-east-1",
+      "arn": "arn:aws:codewhisperer:us-west-2:533267146179:profile/PYWHHDDNKQP9",
+      "endpoint": "https://codewhisperer.us-east-1.amazonaws.com/"
     },
     {
       "profileName": "EU Payments Team",
       "accountId": "123122323123",
       "region": "eu-central-1",
-      "arn": "arn:aws:codewhisperer:eu-central-1:123122323123:profile/PYWHHDDNKQP9"
+      "arn": "arn:aws:codewhisperer:eu-central-1:123122323123:profile/PYWHHDDNKQP9",
+      "endpoint": "https://rts.prod-eu-central-1.codewhisperer.ai.aws.dev/"
     }
   ]
 }

@@ -31,6 +31,7 @@ import software.aws.toolkits.core.utils.info
 import software.aws.toolkits.jetbrains.core.awsClient
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
+import software.aws.toolkits.jetbrains.services.amazonq.clients.AbstractProfileAwareClient
 import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
 import software.aws.toolkits.jetbrains.services.amazonqFeatureDev.FEATURE_EVALUATION_PRODUCT_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.calculateTotalLatency
@@ -41,8 +42,11 @@ import software.amazon.awssdk.services.codewhispererruntime.model.ChatTriggerTyp
 
 @Service(Service.Level.PROJECT)
 class FeatureDevClient(
-    private val project: Project,
-) {
+    override val project: Project,
+) : AbstractProfileAwareClient(project) {
+
+    private val myBearerClient = bearerClient()
+
     fun getTelemetryOptOutPreference() =
         if (AwsSettings.getInstance().isTelemetryEnabled) {
             OptOutPreference.OPTIN
@@ -70,17 +74,11 @@ class FeatureDevClient(
                 .build()
         }
 
-    private fun connection() =
-        ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
-            ?: error("Attempted to use connection while one does not exist")
-
-    private fun bearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererRuntimeClient>()
-
     private val amazonQStreamingClient
         get() = AmazonQStreamingClient.getInstance(project)
 
     fun sendFeatureDevTelemetryEvent(conversationId: String): SendTelemetryEventResponse =
-        bearerClient().sendTelemetryEvent { requestBuilder ->
+        myBearerClient.sendTelemetryEvent { requestBuilder ->
             requestBuilder.telemetryEvent { telemetryEventBuilder ->
                 telemetryEventBuilder.featureDevEvent {
                     it.conversationId(conversationId)
@@ -91,7 +89,7 @@ class FeatureDevClient(
         }
 
     fun sendFeatureDevMetricData(operationName: String, result: String): SendTelemetryEventResponse =
-        bearerClient().sendTelemetryEvent { requestBuilder ->
+        myBearerClient.sendTelemetryEvent { requestBuilder ->
             requestBuilder.telemetryEvent { telemetryEventBuilder ->
                 telemetryEventBuilder.metricData {
                     it
@@ -122,7 +120,7 @@ class FeatureDevClient(
         linesOfCodeGenerated: Int,
         charactersOfCodeGenerated: Int,
     ): SendTelemetryEventResponse =
-        bearerClient().sendTelemetryEvent { requestBuilder ->
+        myBearerClient.sendTelemetryEvent { requestBuilder ->
             requestBuilder.telemetryEvent { telemetryEventBuilder ->
                 telemetryEventBuilder.featureDevCodeGenerationEvent {
                     it
@@ -140,7 +138,7 @@ class FeatureDevClient(
         linesOfCodeAccepted: Int,
         charactersOfCodeAccepted: Int,
     ): SendTelemetryEventResponse =
-        bearerClient().sendTelemetryEvent { requestBuilder ->
+        myBearerClient.sendTelemetryEvent { requestBuilder ->
             requestBuilder.telemetryEvent { telemetryEventBuilder ->
                 telemetryEventBuilder.featureDevCodeAcceptanceEvent {
                     it
@@ -154,7 +152,7 @@ class FeatureDevClient(
         }
 
     fun createTaskAssistConversation(): CreateTaskAssistConversationResponse =
-        bearerClient().createTaskAssistConversation(
+        myBearerClient.createTaskAssistConversation(
             CreateTaskAssistConversationRequest.builder().build(),
         )
 
@@ -164,7 +162,7 @@ class FeatureDevClient(
         contentLength: Long,
         uploadId: String,
     ): CreateUploadUrlResponse =
-        bearerClient().createUploadUrl {
+        myBearerClient.createUploadUrl {
             it
                 .contentChecksumType(ContentChecksumType.SHA_256)
                 .uploadId(uploadId)
@@ -191,7 +189,7 @@ class FeatureDevClient(
         codeGenerationId: String?,
         currentCodeGenerationId: String?,
     ): StartTaskAssistCodeGenerationResponse =
-        bearerClient()
+        myBearerClient
             .startTaskAssistCodeGeneration { request ->
                 request
                     .conversationState {
@@ -211,7 +209,7 @@ class FeatureDevClient(
         conversationId: String,
         codeGenerationId: String,
     ): GetTaskAssistCodeGenerationResponse =
-        bearerClient()
+        myBearerClient
             .getTaskAssistCodeGeneration {
                 it
                     .conversationId(conversationId)

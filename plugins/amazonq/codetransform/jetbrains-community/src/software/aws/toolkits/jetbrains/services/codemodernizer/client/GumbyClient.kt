@@ -46,6 +46,7 @@ import software.aws.toolkits.jetbrains.services.amazonq.AWS_KMS
 import software.aws.toolkits.jetbrains.services.amazonq.CONTENT_SHA256
 import software.aws.toolkits.jetbrains.services.amazonq.SERVER_SIDE_ENCRYPTION
 import software.aws.toolkits.jetbrains.services.amazonq.SERVER_SIDE_ENCRYPTION_AWS_KMS_KEY_ID
+import software.aws.toolkits.jetbrains.services.amazonq.clients.AbstractProfileAwareClient
 import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
 import software.aws.toolkits.jetbrains.services.amazonq.codeWhispererUserContext
 import software.aws.toolkits.jetbrains.services.codemodernizer.model.CodeModernizerMetrics
@@ -57,11 +58,9 @@ import java.net.HttpURLConnection
 import java.time.Instant
 
 @Service(Service.Level.PROJECT)
-class GumbyClient(private val project: Project) {
-    private fun connection() = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(QConnection.getInstance())
-        ?: error("Attempted to use connection while one does not exist")
+class GumbyClient(override val project: Project) : AbstractProfileAwareClient(project){
 
-    private fun bearerClient() = connection().getConnectionSettings().awsClient<CodeWhispererRuntimeClient>()
+    private val myBearerClient = bearerClient()
 
     private val amazonQStreamingClient
         get() = AmazonQStreamingClient.getInstance(project)
@@ -72,7 +71,7 @@ class GumbyClient(private val project: Project) {
             .contentChecksum(sha256Checksum)
             .uploadIntent(UploadIntent.TRANSFORMATION)
             .build()
-        return callApi({ bearerClient().createUploadUrl(request) }, apiName = "CreateUploadUrl")
+        return callApi({ myBearerClient.createUploadUrl(request) }, apiName = "CreateUploadUrl")
     }
 
     fun createHilUploadUrl(sha256Checksum: String, jobId: JobId): CreateUploadUrlResponse {
@@ -93,12 +92,12 @@ class GumbyClient(private val project: Project) {
                     .build()
             )
             .build()
-        return callApi({ bearerClient().createUploadUrl(request) }, apiName = "CreateUploadUrl")
+        return callApi({ myBearerClient.createUploadUrl(request) }, apiName = "CreateUploadUrl")
     }
 
     fun getCodeModernizationJob(jobId: String): GetTransformationResponse {
         val request = GetTransformationRequest.builder().transformationJobId(jobId).build()
-        return callApi({ bearerClient().getTransformation(request) }, apiName = "GetTransformation")
+        return callApi({ myBearerClient.getTransformation(request) }, apiName = "GetTransformation")
     }
 
     fun startCodeModernization(
@@ -117,7 +116,7 @@ class GumbyClient(private val project: Project) {
                     .target { it.language(targetLanguage) }
             }
             .build()
-        return callApi({ bearerClient().startTransformation(request) }, apiName = "StartTransformation")
+        return callApi({ myBearerClient.startTransformation(request) }, apiName = "StartTransformation")
     }
 
     fun resumeCodeTransformation(
@@ -128,17 +127,17 @@ class GumbyClient(private val project: Project) {
             .transformationJobId(jobId.id)
             .userActionStatus(userActionStatus)
             .build()
-        return callApi({ bearerClient().resumeTransformation(request) }, apiName = "ResumeTransformation")
+        return callApi({ myBearerClient.resumeTransformation(request) }, apiName = "ResumeTransformation")
     }
 
     fun getCodeModernizationPlan(jobId: JobId): GetTransformationPlanResponse {
         val request = GetTransformationPlanRequest.builder().transformationJobId(jobId.id).build()
-        return callApi({ bearerClient().getTransformationPlan(request) }, apiName = "GetTransformationPlan")
+        return callApi({ myBearerClient.getTransformationPlan(request) }, apiName = "GetTransformationPlan")
     }
 
     fun stopTransformation(transformationJobId: String): StopTransformationResponse {
         val request = StopTransformationRequest.builder().transformationJobId(transformationJobId).build()
-        return callApi({ bearerClient().stopTransformation(request) }, apiName = "StopTransformation")
+        return callApi({ myBearerClient.stopTransformation(request) }, apiName = "StopTransformation")
     }
 
     private fun <T : CodeWhispererRuntimeResponse> callApi(
@@ -216,7 +215,7 @@ class GumbyClient(private val project: Project) {
     }
 
     fun sendTransformTelemetryEvent(job: JobId, metrics: CodeModernizerMetrics) {
-        bearerClient().sendTelemetryEvent { requestBuilder ->
+        myBearerClient.sendTelemetryEvent { requestBuilder ->
             requestBuilder.telemetryEvent { telemetryEventBuilder ->
                 telemetryEventBuilder.transformEvent {
                     it.jobId(job.id)

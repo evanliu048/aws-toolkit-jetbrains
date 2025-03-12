@@ -42,6 +42,7 @@ import software.amazon.awssdk.services.codewhispererruntime.model.StartTestGener
 import software.amazon.awssdk.services.codewhispererruntime.model.SuggestionState
 import software.amazon.awssdk.services.codewhispererruntime.model.TargetCode
 import software.amazon.awssdk.services.codewhispererruntime.model.UserIntent
+import software.aws.toolkits.core.region.AwsRegion
 import software.aws.toolkits.core.utils.debug
 import software.aws.toolkits.core.utils.getLogger
 import software.aws.toolkits.core.utils.warn
@@ -57,7 +58,7 @@ import software.aws.toolkits.jetbrains.services.codewhisperer.customization.Code
 import software.aws.toolkits.jetbrains.services.codewhisperer.explorer.CodeWhispererExplorerActionManager
 import software.aws.toolkits.jetbrains.services.codewhisperer.language.CodeWhispererProgrammingLanguage
 import software.aws.toolkits.jetbrains.services.codewhisperer.model.SessionContextNew
-import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileSelectedListener
+import software.aws.toolkits.jetbrains.services.ProfileSelectedListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContext
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.RequestContextNew
 import software.aws.toolkits.jetbrains.services.codewhisperer.service.ResponseContext
@@ -110,8 +111,6 @@ interface CodeWhispererClientAdaptor : Disposable {
         bearerClient: CodeWhispererRuntimeClient,
         request: ListAvailableProfilesRequest
     ): Sequence<ListAvailableProfilesResponse>
-
-    fun createTemporaryClientForEndpoint(endpoint: String, region: Region): CodeWhispererRuntimeClient
 
     fun startTestGeneration(uploadId: String, targetCode: List<TargetCode>, userInput: String): StartTestGenerationResponse
 
@@ -326,13 +325,13 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
             ProfileSelectedListener.TOPIC,
             object : ProfileSelectedListener {
                 override fun profileSelected(endpoint: String, region: Region, profileArn: String) {
+                    val connection = ToolkitConnectionManager.getInstance(project).activeConnectionForFeature(CodeWhispererConnection.getInstance())
+                    connection as? AwsBearerTokenConnection ?: run {
+                        return
+                    }
                     myBearerClient?.close()
                     myBearerClient = null
-                    myBearerClient = AwsClientManager.getInstance().createUnmanagedClient(
-                        AnonymousCredentialsProvider.create(), //TODO which provider is needed here
-                        region,
-                        endpoint
-                    )
+                    myBearerClient = AwsClientManager.getInstance().getClient<CodeWhispererRuntimeClient>(connection.getConnectionSettings().withRegion(AwsRegion(region.id(), region.id(), "aws")))
                 }
             }
         )
@@ -408,15 +407,6 @@ open class CodeWhispererClientAdaptorImpl(override val project: Project) : CodeW
             nextToken = response.nextToken()
             yield(response)
         } while (!nextToken.isNullOrEmpty())
-    }
-
-    override fun createTemporaryClientForEndpoint(endpoint: String, region: Region): CodeWhispererRuntimeClient {
-//        TODO "what provider is needed here
-        return AwsClientManager.getInstance().createUnmanagedClient(
-            AnonymousCredentialsProvider.create(), // 或者你也可以换成 SSO BearerTokenProvider
-            region,
-            endpoint
-        )
     }
 
     override fun startTestGeneration(uploadId: String, targetCode: List<TargetCode>, userInput: String): StartTestGenerationResponse =

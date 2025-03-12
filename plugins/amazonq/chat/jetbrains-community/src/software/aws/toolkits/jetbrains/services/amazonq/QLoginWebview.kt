@@ -3,7 +3,6 @@
 
 package software.aws.toolkits.jetbrains.services.amazonq
 
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.DataContext
@@ -29,7 +28,6 @@ import software.aws.toolkits.core.utils.warn
 import software.aws.toolkits.jetbrains.core.credentials.AwsBearerTokenConnection
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitAuthManager
 import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManager
-import software.aws.toolkits.jetbrains.core.credentials.ToolkitConnectionManagerListener
 import software.aws.toolkits.jetbrains.core.credentials.actions.SsoLogoutAction
 import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.core.credentials.sono.Q_SCOPES
@@ -42,7 +40,7 @@ import software.aws.toolkits.jetbrains.core.webview.WebviewResourceHandlerFactor
 import software.aws.toolkits.jetbrains.isDeveloperMode
 import software.aws.toolkits.jetbrains.services.amazonq.toolwindow.AmazonQToolWindowFactory
 import software.aws.toolkits.jetbrains.services.amazonq.util.createBrowser
-import software.aws.toolkits.jetbrains.services.codewhisperer.profiles.ProfileSelectedListener
+import software.aws.toolkits.jetbrains.services.ProfileSelectedListener
 import software.aws.toolkits.jetbrains.services.codewhisperer.util.CodeWhispererConstants
 import software.aws.toolkits.jetbrains.utils.isQConnected
 import software.aws.toolkits.jetbrains.utils.isQExpired
@@ -208,7 +206,7 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
                     }
                 }
 
-                CodeWhispererProfileManager.getInstance().setProfileAndNotify(
+                CodeWhispererProfileManager.getInstance().setProfileAndNotify(project,
                     Profile.builder().profileName(message.profileName).arn(message.profileArn).build(),
                     endpoint,
                     region
@@ -256,29 +254,6 @@ class QWebviewBrowser(val project: Project, private val parentDisposable: Dispos
                 } else {
                     UiTelemetry.click(project, signInOption)
                 }
-            }
-            is BrowserMessage.ListProfiles -> {
-                val jsonData = """
-           {
-  "profiles": [
-    {
-      "name": "ACME platform work",
-      "region": "us-west-2",
-      "endpoint": "https://example.com/api/us-west-2",
-      "description": "General purpose dev profile for platform work"
-    },
-    {
-      "name": "EU Payments Team",
-      "region": "eu-central-1",
-      "endpoint": "https://example.com/api/eu-central-1",
-      "description": "For work on the EU offering of our payment service"
-    }
-  ]
-}
-
-        """.trimIndent()
-
-                executeJS("window.ideClient.handleProfiles($jsonData)")
             }
         }
     }

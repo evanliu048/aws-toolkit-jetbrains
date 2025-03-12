@@ -16,9 +16,7 @@ interface CodeWhispererProfileManager {
 
     fun fetchAllAvailableProfiles(project: Project) : List<ProfileUiItem>?
 
-    fun getSelectedProfile(): ProfileUiItem?
-
-    fun setProfileAndNotify(profile: Profile, endpoint: String, region: Region)
+    fun setProfileAndNotify(project: Project, profile: Profile, endpoint: String, region: Region)
 
     fun activeProfile(project: Project): ProfileUiItem?
 
