@@ -3,8 +3,6 @@
 
 package software.aws.toolkits.jetbrains.common.clients
 
-import com.intellij.openapi.Disposable
-import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
@@ -38,7 +36,6 @@ import software.aws.toolkits.jetbrains.core.credentials.pinning.QConnection
 import software.aws.toolkits.jetbrains.services.amazonq.clients.AmazonQStreamingClient
 import software.aws.toolkits.jetbrains.services.amazonqDoc.FEATURE_EVALUATION_PRODUCT_NAME
 import software.aws.toolkits.jetbrains.services.codemodernizer.utils.calculateTotalLatency
-import software.aws.toolkits.jetbrains.services.ProfileSelectedListener
 import software.aws.toolkits.jetbrains.services.amazonq.clients.AbstractProfileAwareClient
 import software.aws.toolkits.jetbrains.services.telemetry.ClientMetadata
 import software.aws.toolkits.jetbrains.settings.AwsSettings
